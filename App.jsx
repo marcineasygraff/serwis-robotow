@@ -11,6 +11,7 @@ export default function SerwisRobotowApp() {
   const [activeTab, setActiveTab] = useState("calculator");
 
   const [orders, setOrders] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
@@ -56,15 +57,27 @@ export default function SerwisRobotowApp() {
     );
   }, [machineQuantity, manualQuantity, points, km]);
 
-  // Zapis zlecenia
+  // Reset formularza
+  const resetForm = () => {
+    setClientName("");
+    setAddress("");
+    setPhone("");
+    setMachineQuantity("");
+    setManualQuantity("");
+    setPoints("");
+    setKm("");
+    setEditingId(null);
+  };
+
+  // Zapis lub edycja zlecenia
   const saveOrder = () => {
     if (!clientName.trim()) {
       alert("Podaj imię klienta");
       return;
     }
 
-    const newOrder = {
-      id: Date.now(),
+    const orderData = {
+      id: editingId || Date.now(),
       clientName,
       address,
       phone,
@@ -77,17 +90,36 @@ export default function SerwisRobotowApp() {
       status: "Oczekuje",
     };
 
-    setOrders((prev) => [newOrder, ...prev]);
+    if (editingId) {
+      // EDYCJA
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === editingId ? orderData : order
+        )
+      );
+    } else {
+      // NOWE ZLECENIE
+      setOrders((prev) => [orderData, ...prev]);
+    }
 
-    setClientName("");
-    setAddress("");
-    setPhone("");
-    setMachineQuantity("");
-    setManualQuantity("");
-    setPoints("");
-    setKm("");
+    resetForm();
   };
 
+  // Funkcja edycji
+  const editOrder = (order) => {
+    setClientName(order.clientName);
+    setAddress(order.address);
+    setPhone(order.phone);
+    setMachineQuantity(order.machineQuantity);
+    setManualQuantity(order.manualQuantity);
+    setPoints(order.points);
+    setKm(order.km);
+    setEditingId(order.id);
+
+    setActiveTab("calculator");
+  };
+
+  // Suma wszystkich zleceń
   const monthlyTotal = orders.reduce(
     (sum, item) => sum + Number(item.total || 0),
     0
@@ -125,7 +157,9 @@ export default function SerwisRobotowApp() {
             <div className="rounded-2xl shadow-sm border bg-white">
               <div className="p-6 space-y-4">
                 <h2 className="text-xl font-semibold">
-                  Nowe zlecenie
+                  {editingId
+                    ? "Edytuj zlecenie"
+                    : "Nowe zlecenie"}
                 </h2>
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -158,7 +192,7 @@ export default function SerwisRobotowApp() {
 
                   <input
                     className="border rounded-xl p-3 w-full"
-                    placeholder="Ilość mm przewodu maszynowo"
+                    placeholder="Maszynowo (mm)"
                     type="number"
                     value={machineQuantity}
                     onChange={(e) =>
@@ -168,7 +202,7 @@ export default function SerwisRobotowApp() {
 
                   <input
                     className="border rounded-xl p-3 w-full"
-                    placeholder="Ilość mm przewodu ręcznie"
+                    placeholder="Ręcznie (mm)"
                     type="number"
                     value={manualQuantity}
                     onChange={(e) =>
@@ -198,42 +232,36 @@ export default function SerwisRobotowApp() {
                 </div>
 
                 <div className="bg-white border rounded-2xl p-4 space-y-2">
-                  <p>
-                    Przewód maszynowo:{" "}
-                    <strong>7 zł / mm</strong>
-                  </p>
-
-                  <p>
-                    Przewód ręcznie:{" "}
-                    <strong>10 zł / mm</strong>
-                  </p>
-
-                  <p>
-                    1 punkt:{" "}
-                    <strong>50 zł</strong>
-                  </p>
-
-                  <p>
-                    Dojazd:{" "}
-                    <strong>3 zł / km</strong>
-                  </p>
-
-                  <p>
-                    Koszty stałe:{" "}
-                    <strong>150 zł</strong>
-                  </p>
+                  <p>Maszynowo: <strong>7 zł / mm</strong></p>
+                  <p>Ręcznie: <strong>10 zł / mm</strong></p>
+                  <p>Punkty: <strong>50 zł</strong></p>
+                  <p>Dojazd: <strong>3 zł / km</strong></p>
+                  <p>Koszty stałe: <strong>150 zł</strong></p>
 
                   <p className="text-lg font-bold">
                     Suma: {total} zł
                   </p>
                 </div>
 
-                <button
-                  onClick={saveOrder}
-                  className="rounded-2xl border px-4 py-2 font-medium"
-                >
-                  Zapisz zlecenie
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveOrder}
+                    className="rounded-2xl border px-4 py-2 font-medium"
+                  >
+                    {editingId
+                      ? "Zapisz zmiany"
+                      : "Zapisz zlecenie"}
+                  </button>
+
+                  {editingId && (
+                    <button
+                      onClick={resetForm}
+                      className="rounded-2xl border px-4 py-2 font-medium"
+                    >
+                      Anuluj edycję
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -244,13 +272,13 @@ export default function SerwisRobotowApp() {
                 </h2>
 
                 <p>
-                  Liczba zleceń:{" "}
-                  <strong>{orders.length}</strong>
+                  Liczba zleceń:
+                  <strong> {orders.length}</strong>
                 </p>
 
                 <p>
-                  Suma zarobku:{" "}
-                  <strong>{monthlyTotal} zł</strong>
+                  Suma zarobku:
+                  <strong> {monthlyTotal} zł</strong>
                 </p>
               </div>
             </div>
@@ -282,39 +310,42 @@ export default function SerwisRobotowApp() {
                       </p>
 
                       <p>{order.address}</p>
-
                       <p>{order.phone}</p>
 
                       <p>
-                        Maszynowo:{" "}
+                        Maszynowo:
                         {order.machineQuantity}
                       </p>
 
                       <p>
-                        Ręcznie:{" "}
+                        Ręcznie:
                         {order.manualQuantity}
                       </p>
 
-                      <p>
-                        Punkty: {order.points}
-                      </p>
+                      <p>Punkty: {order.points}</p>
 
                       <p>
                         Dojazd km: {order.km}
                       </p>
 
                       <p>
-                        Suma:{" "}
+                        Suma:
                         <strong>
+                          {" "}
                           {order.total} zł
                         </strong>
                       </p>
 
                       <p>Data: {order.date}</p>
 
-                      <p>
-                        Status: {order.status}
-                      </p>
+                      <button
+                        onClick={() =>
+                          editOrder(order)
+                        }
+                        className="mt-2 rounded-xl border px-3 py-1 text-sm"
+                      >
+                        Edytuj
+                      </button>
                     </div>
                   ))}
                 </div>

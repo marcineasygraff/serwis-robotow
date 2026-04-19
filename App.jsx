@@ -17,7 +17,7 @@ export default function SerwisRobotowApp() {
   const PRICE_MANUAL_PER_METER = 10;
   const PRICE_PER_POINT = 50;
   const TRAVEL_COST = 3;
-  const Koszty stałe = 150;
+  const Koszty_stałe = 150;
 
   const total = useMemo(() => {
     const mq = Number(machineQuantity) || 0;

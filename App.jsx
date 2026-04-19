@@ -69,7 +69,7 @@ export default function SerwisRobotowApp() {
     setEditingId(null);
   };
 
-  // Zapis lub edycja zlecenia
+  // Zapis / edycja
   const saveOrder = () => {
     if (!clientName.trim()) {
       alert("Podaj imię klienta");
@@ -91,21 +91,19 @@ export default function SerwisRobotowApp() {
     };
 
     if (editingId) {
-      // EDYCJA
       setOrders((prev) =>
         prev.map((order) =>
           order.id === editingId ? orderData : order
         )
       );
     } else {
-      // NOWE ZLECENIE
       setOrders((prev) => [orderData, ...prev]);
     }
 
     resetForm();
   };
 
-  // Funkcja edycji
+  // Edycja
   const editOrder = (order) => {
     setClientName(order.clientName);
     setAddress(order.address);
@@ -119,34 +117,34 @@ export default function SerwisRobotowApp() {
     setActiveTab("calculator");
   };
 
-  // Suma wszystkich zleceń
   const monthlyTotal = orders.reduce(
     (sum, item) => sum + Number(item.total || 0),
     0
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-5xl mx-auto space-y-6">
+
         <h1 className="text-3xl font-bold">
           Serwis Robotów
         </h1>
 
-        <p className="text-gray-600">
+        <p className="text-gray-400">
           Kalkulator zleceń + historia klientów
         </p>
 
         <div className="flex gap-3">
           <button
             onClick={() => setActiveTab("calculator")}
-            className="rounded-2xl border px-4 py-2 font-medium"
+            className="rounded-2xl border border-gray-600 bg-gray-800 hover:bg-gray-700 px-4 py-2"
           >
             Kalkulator
           </button>
 
           <button
             onClick={() => setActiveTab("history")}
-            className="rounded-2xl border px-4 py-2 font-medium"
+            className="rounded-2xl border border-gray-600 bg-gray-800 hover:bg-gray-700 px-4 py-2"
           >
             Historia zleceń
           </button>
@@ -154,8 +152,9 @@ export default function SerwisRobotowApp() {
 
         {activeTab === "calculator" && (
           <>
-            <div className="rounded-2xl shadow-sm border bg-white">
+            <div className="rounded-2xl border border-gray-700 bg-gray-900">
               <div className="p-6 space-y-4">
+
                 <h2 className="text-xl font-semibold">
                   {editingId
                     ? "Edytuj zlecenie"
@@ -163,8 +162,9 @@ export default function SerwisRobotowApp() {
                 </h2>
 
                 <div className="grid md:grid-cols-2 gap-4">
+
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Imię klienta"
                     value={clientName}
                     onChange={(e) =>
@@ -173,7 +173,7 @@ export default function SerwisRobotowApp() {
                   />
 
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Telefon"
                     value={phone}
                     onChange={(e) =>
@@ -182,7 +182,7 @@ export default function SerwisRobotowApp() {
                   />
 
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Adres"
                     value={address}
                     onChange={(e) =>
@@ -191,7 +191,7 @@ export default function SerwisRobotowApp() {
                   />
 
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Maszynowo (mm)"
                     type="number"
                     value={machineQuantity}
@@ -201,7 +201,7 @@ export default function SerwisRobotowApp() {
                   />
 
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Ręcznie (mm)"
                     type="number"
                     value={manualQuantity}
@@ -211,7 +211,7 @@ export default function SerwisRobotowApp() {
                   />
 
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Punkty"
                     type="number"
                     value={points}
@@ -221,7 +221,7 @@ export default function SerwisRobotowApp() {
                   />
 
                   <input
-                    className="border rounded-xl p-3 w-full"
+                    className="border border-gray-700 bg-gray-800 text-white rounded-xl p-3 w-full"
                     placeholder="Ilość km dojazdu"
                     type="number"
                     value={km}
@@ -229,14 +229,15 @@ export default function SerwisRobotowApp() {
                       setKm(e.target.value)
                     }
                   />
+
                 </div>
 
-                <div className="bg-white border rounded-2xl p-4 space-y-2">
-                  <p>Maszynowo: <strong>7 zł / mm</strong></p>
-                  <p>Ręcznie: <strong>10 zł / mm</strong></p>
-                  <p>Punkty: <strong>50 zł</strong></p>
-                  <p>Dojazd: <strong>3 zł / km</strong></p>
-                  <p>Koszty stałe: <strong>150 zł</strong></p>
+                <div className="border border-gray-700 rounded-2xl p-4 space-y-2 bg-gray-800">
+                  <p>Maszynowo: 7 zł / mm</p>
+                  <p>Ręcznie: 10 zł / mm</p>
+                  <p>Punkty: 50 zł</p>
+                  <p>Dojazd: 3 zł / km</p>
+                  <p>Koszty stałe: 150 zł</p>
 
                   <p className="text-lg font-bold">
                     Suma: {total} zł
@@ -244,9 +245,10 @@ export default function SerwisRobotowApp() {
                 </div>
 
                 <div className="flex gap-2">
+
                   <button
                     onClick={saveOrder}
-                    className="rounded-2xl border px-4 py-2 font-medium"
+                    className="rounded-2xl border border-gray-600 bg-green-700 hover:bg-green-600 px-4 py-2"
                   >
                     {editingId
                       ? "Zapisz zmiany"
@@ -256,16 +258,18 @@ export default function SerwisRobotowApp() {
                   {editingId && (
                     <button
                       onClick={resetForm}
-                      className="rounded-2xl border px-4 py-2 font-medium"
+                      className="rounded-2xl border border-gray-600 bg-red-700 hover:bg-red-600 px-4 py-2"
                     >
-                      Anuluj edycję
+                      Anuluj
                     </button>
                   )}
+
                 </div>
+
               </div>
             </div>
 
-            <div className="rounded-2xl shadow-sm border bg-white">
+            <div className="rounded-2xl border border-gray-700 bg-gray-900">
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-4">
                   Podsumowanie
@@ -280,29 +284,33 @@ export default function SerwisRobotowApp() {
                   Suma zarobku:
                   <strong> {monthlyTotal} zł</strong>
                 </p>
+
               </div>
             </div>
           </>
         )}
 
         {activeTab === "history" && (
-          <div className="rounded-2xl shadow-sm border bg-white">
+          <div className="rounded-2xl border border-gray-700 bg-gray-900">
             <div className="p-6">
+
               <h2 className="text-xl font-semibold mb-4">
                 Historia zleceń
               </h2>
 
               {orders.length === 0 ? (
-                <p className="text-gray-500">
+                <p className="text-gray-400">
                   Brak zapisanych zleceń
                 </p>
               ) : (
                 <div className="space-y-4">
+
                   {orders.map((order) => (
                     <div
                       key={order.id}
-                      className="border rounded-2xl p-4 bg-white"
+                      className="border border-gray-700 rounded-2xl p-4 bg-gray-800"
                     >
+
                       <p>
                         <strong>
                           {order.clientName}
@@ -342,17 +350,21 @@ export default function SerwisRobotowApp() {
                         onClick={() =>
                           editOrder(order)
                         }
-                        className="mt-2 rounded-xl border px-3 py-1 text-sm"
+                        className="mt-2 rounded-xl border border-gray-600 bg-blue-700 hover:bg-blue-600 px-3 py-1 text-sm"
                       >
                         Edytuj
                       </button>
+
                     </div>
                   ))}
+
                 </div>
               )}
+
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

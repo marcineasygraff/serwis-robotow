@@ -7,47 +7,77 @@ export default function SerwisRobotowApp() {
   const [machineQuantity, setMachineQuantity] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");
+  const [km, setKm] = useState("");
   const [activeTab, setActiveTab] = useState("calculator");
-  const [orders, setOrders] = useState(() => {
-    const savedOrders = localStorage.getItem("serwis-robotow-orders");
-    return savedOrders ? JSON.parse(savedOrders) : [];
-  });
+
+  const [orders, setOrders] = useState([]);
 
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
   const PRICE_PER_POINT = 50;
-  const TRAVEL_COST = 150;
+  const PRICE_PER_KM = 3;
+  const FIXED_TRAVEL_COST = 150;
 
+  // Wczytanie z localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedOrders =
+        localStorage.getItem("serwis-robotow-orders");
+
+      if (savedOrders) {
+        setOrders(JSON.parse(savedOrders));
+      }
+    }
+  }, []);
+
+  // Zapis do localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "serwis-robotow-orders",
+        JSON.stringify(orders)
+      );
+    }
+  }, [orders]);
+
+  // Liczenie sumy
   const total = useMemo(() => {
     const mq = Number(machineQuantity) || 0;
     const manq = Number(manualQuantity) || 0;
     const p = Number(points) || 0;
+    const travelKm = Number(km) || 0;
 
     return (
       mq * PRICE_MACHINE_PER_METER +
       manq * PRICE_MANUAL_PER_METER +
       p * PRICE_PER_POINT +
-      TRAVEL_COST
+      travelKm * PRICE_PER_KM +
+      FIXED_TRAVEL_COST
     );
-  }, [machineQuantity, manualQuantity, points]);
+  }, [machineQuantity, manualQuantity, points, km]);
 
+  // Zapis zlecenia
   const saveOrder = () => {
-    if (!clientName.trim()) return;
+    if (!clientName.trim()) {
+      alert("Podaj imię klienta");
+      return;
+    }
 
     const newOrder = {
       id: Date.now(),
       clientName,
       address,
       phone,
-      machineQuantity,
-      manualQuantity,
-      points,
+      machineQuantity: Number(machineQuantity) || 0,
+      manualQuantity: Number(manualQuantity) || 0,
+      points: Number(points) || 0,
+      km: Number(km) || 0,
       total,
       date: new Date().toLocaleDateString("pl-PL"),
       status: "Oczekuje",
     };
 
-    setOrders([newOrder, ...orders]);
+    setOrders((prev) => [newOrder, ...prev]);
 
     setClientName("");
     setAddress("");
@@ -55,24 +85,21 @@ export default function SerwisRobotowApp() {
     setMachineQuantity("");
     setManualQuantity("");
     setPoints("");
+    setKm("");
   };
 
-  useEffect(() => {
-    localStorage.setItem(
-      "serwis-robotow-orders",
-      JSON.stringify(orders)
-    );
-  }, [orders]);
-
   const monthlyTotal = orders.reduce(
-    (sum, item) => sum + item.total,
+    (sum, item) => sum + Number(item.total || 0),
     0
   );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Serwis Robotów</h1>
+        <h1 className="text-3xl font-bold">
+          Serwis Robotów
+        </h1>
+
         <p className="text-gray-600">
           Kalkulator zleceń + historia klientów
         </p>
@@ -84,6 +111,7 @@ export default function SerwisRobotowApp() {
           >
             Kalkulator
           </button>
+
           <button
             onClick={() => setActiveTab("history")}
             className="rounded-2xl border px-4 py-2 font-medium"
@@ -93,131 +121,206 @@ export default function SerwisRobotowApp() {
         </div>
 
         {activeTab === "calculator" && (
-        <>
-        <div className="rounded-2xl shadow-sm border bg-white">
-          <div className="p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Nowe zlecenie</h2>
+          <>
+            <div className="rounded-2xl shadow-sm border bg-white">
+              <div className="p-6 space-y-4">
+                <h2 className="text-xl font-semibold">
+                  Nowe zlecenie
+                </h2>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Imię klienta"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-              />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Imię klienta"
+                    value={clientName}
+                    onChange={(e) =>
+                      setClientName(e.target.value)
+                    }
+                  />
 
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Telefon"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Telefon"
+                    value={phone}
+                    onChange={(e) =>
+                      setPhone(e.target.value)
+                    }
+                  />
 
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Adres"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Adres"
+                    value={address}
+                    onChange={(e) =>
+                      setAddress(e.target.value)
+                    }
+                  />
 
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Ilość mm przewodu wkopana maszynowo"
-                type="number"
-                value={machineQuantity}
-                onChange={(e) => setMachineQuantity(e.target.value)}
-              />
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Ilość mm przewodu maszynowo"
+                    type="number"
+                    value={machineQuantity}
+                    onChange={(e) =>
+                      setMachineQuantity(e.target.value)
+                    }
+                  />
 
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Ilość mm przewodu wkopana ręcznie"
-                type="number"
-                value={manualQuantity}
-                onChange={(e) => setManualQuantity(e.target.value)}
-              />
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Ilość mm przewodu ręcznie"
+                    type="number"
+                    value={manualQuantity}
+                    onChange={(e) =>
+                      setManualQuantity(e.target.value)
+                    }
+                  />
 
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Punkty"
-                type="number"
-                value={points}
-                onChange={(e) => setPoints(e.target.value)}
-              />
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Punkty"
+                    type="number"
+                    value={points}
+                    onChange={(e) =>
+                      setPoints(e.target.value)
+                    }
+                  />
+
+                  <input
+                    className="border rounded-xl p-3 w-full"
+                    placeholder="Ilość km dojazdu"
+                    type="number"
+                    value={km}
+                    onChange={(e) =>
+                      setKm(e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="bg-white border rounded-2xl p-4 space-y-2">
+                  <p>
+                    Przewód maszynowo:{" "}
+                    <strong>7 zł / mm</strong>
+                  </p>
+
+                  <p>
+                    Przewód ręcznie:{" "}
+                    <strong>10 zł / mm</strong>
+                  </p>
+
+                  <p>
+                    1 punkt:{" "}
+                    <strong>50 zł</strong>
+                  </p>
+
+                  <p>
+                    Dojazd:{" "}
+                    <strong>3 zł / km</strong>
+                  </p>
+
+                  <p>
+                    Koszty stałe:{" "}
+                    <strong>150 zł</strong>
+                  </p>
+
+                  <p className="text-lg font-bold">
+                    Suma: {total} zł
+                  </p>
+                </div>
+
+                <button
+                  onClick={saveOrder}
+                  className="rounded-2xl border px-4 py-2 font-medium"
+                >
+                  Zapisz zlecenie
+                </button>
+              </div>
             </div>
 
-            <div className="bg-white border rounded-2xl p-4 space-y-2">
-              <p>
-                Przewód wkopany maszynowo: <strong>7 zł / mm</strong>
-              </p>
-              <p>
-                Przewód wkopany ręcznie: <strong>10 zł / mm</strong>
-              </p>
-              <p>
-                1 punkt: <strong>50 zł</strong>
-              </p>
-              <p>
-                Dojazd: <strong>150 zł</strong>
-              </p>
-              <p className="text-lg font-bold">Suma: {total} zł</p>
+            <div className="rounded-2xl shadow-sm border bg-white">
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-4">
+                  Podsumowanie
+                </h2>
+
+                <p>
+                  Liczba zleceń:{" "}
+                  <strong>{orders.length}</strong>
+                </p>
+
+                <p>
+                  Suma zarobku:{" "}
+                  <strong>{monthlyTotal} zł</strong>
+                </p>
+              </div>
             </div>
-
-            <button
-              onClick={saveOrder}
-              className="rounded-2xl border px-4 py-2 font-medium"
-            >
-              Zapisz zlecenie
-            </button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl shadow-sm border bg-white">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Podsumowanie</h2>
-            <p>
-              Liczba zleceń: <strong>{orders.length}</strong>
-            </p>
-            <p>
-              Suma zarobku: <strong>{monthlyTotal} zł</strong>
-            </p>
-          </div>
-        </div>
-
-        </>
+          </>
         )}
 
         {activeTab === "history" && (
-        <div className="rounded-2xl shadow-sm border bg-white">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Historia zleceń</h2>
+          <div className="rounded-2xl shadow-sm border bg-white">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Historia zleceń
+              </h2>
 
-            {orders.length === 0 ? (
-              <p className="text-gray-500">Brak zapisanych zleceń</p>
-            ) : (
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="border rounded-2xl p-4 bg-white"
-                  >
-                    <p>
-                      <strong>{order.clientName}</strong>
-                    </p>
-                    <p>{order.address}</p>
-                    <p>{order.phone}</p>
-                    <p>Maszynowo: {order.machineQuantity}</p>
-                    <p>Ręcznie: {order.manualQuantity}</p>
-                    <p>Punkty: {order.points}</p>
-                    <p>
-                      Suma: <strong>{order.total} zł</strong>
-                    </p>
-                    <p>Data: {order.date}</p>
-                    <p>Status: {order.status}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+              {orders.length === 0 ? (
+                <p className="text-gray-500">
+                  Brak zapisanych zleceń
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="border rounded-2xl p-4 bg-white"
+                    >
+                      <p>
+                        <strong>
+                          {order.clientName}
+                        </strong>
+                      </p>
+
+                      <p>{order.address}</p>
+
+                      <p>{order.phone}</p>
+
+                      <p>
+                        Maszynowo:{" "}
+                        {order.machineQuantity}
+                      </p>
+
+                      <p>
+                        Ręcznie:{" "}
+                        {order.manualQuantity}
+                      </p>
+
+                      <p>
+                        Punkty: {order.points}
+                      </p>
+
+                      <p>
+                        Dojazd km: {order.km}
+                      </p>
+
+                      <p>
+                        Suma:{" "}
+                        <strong>
+                          {order.total} zł
+                        </strong>
+                      </p>
+
+                      <p>Data: {order.date}</p>
+
+                      <p>
+                        Status: {order.status}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         )}
       </div>
     </div>

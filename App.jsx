@@ -1,7 +1,4 @@
 import React, { useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export default function SerwisRobotowApp() {
   const [clientName, setClientName] = useState("");
@@ -21,7 +18,13 @@ export default function SerwisRobotowApp() {
     const mq = Number(machineQuantity) || 0;
     const manq = Number(manualQuantity) || 0;
     const p = Number(points) || 0;
-    return mq * PRICE_MACHINE_PER_METER + manq * PRICE_MANUAL_PER_METER + p * PRICE_PER_POINT + TRAVEL_COST;
+
+    return (
+      mq * PRICE_MACHINE_PER_METER +
+      manq * PRICE_MANUAL_PER_METER +
+      p * PRICE_PER_POINT +
+      TRAVEL_COST
+    );
   }, [machineQuantity, manualQuantity, points]);
 
   const saveOrder = () => {
@@ -41,6 +44,7 @@ export default function SerwisRobotowApp() {
     };
 
     setOrders([newOrder, ...orders]);
+
     setClientName("");
     setAddress("");
     setPhone("");
@@ -49,47 +53,63 @@ export default function SerwisRobotowApp() {
     setPoints("");
   };
 
-  const monthlyTotal = orders.reduce((sum, item) => sum + item.total, 0);
+  const monthlyTotal = orders.reduce(
+    (sum, item) => sum + item.total,
+    0
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold">Serwis Robotów</h1>
-        <p className="text-gray-600">Kalkulator zleceń + historia klientów</p>
+        <p className="text-gray-600">
+          Kalkulator zleceń + historia klientów
+        </p>
 
-        <Card className="rounded-2xl shadow-sm">
-          <CardContent className="p-6 space-y-4">
+        <div className="rounded-2xl shadow-sm border bg-white">
+          <div className="p-6 space-y-4">
             <h2 className="text-xl font-semibold">Nowe zlecenie</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <Input
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Imię klienta"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
-              <Input
+
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Telefon"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
-              <Input
+
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Adres"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
-              <Input
+
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Ilość mm przewodu wkopana maszynowo"
                 type="number"
                 value={machineQuantity}
                 onChange={(e) => setMachineQuantity(e.target.value)}
               />
-              <Input
+
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Ilość mm przewodu wkopana ręcznie"
                 type="number"
                 value={manualQuantity}
                 onChange={(e) => setManualQuantity(e.target.value)}
               />
-              <Input
+
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Punkty"
                 type="number"
                 value={points}
@@ -98,29 +118,44 @@ export default function SerwisRobotowApp() {
             </div>
 
             <div className="bg-white border rounded-2xl p-4 space-y-2">
-              <p>Przewód wkopany maszynowo: <strong>7 zł / mm</strong></p>
-              <p>Przewód wkopany ręcznie: <strong>10 zł / mm</strong></p>
-              <p>1 punkt: <strong>50 zł</strong></p>
-              <p>Dojazd: <strong>150 zł</strong></p>
+              <p>
+                Przewód wkopany maszynowo: <strong>7 zł / mm</strong>
+              </p>
+              <p>
+                Przewód wkopany ręcznie: <strong>10 zł / mm</strong>
+              </p>
+              <p>
+                1 punkt: <strong>50 zł</strong>
+              </p>
+              <p>
+                Dojazd: <strong>150 zł</strong>
+              </p>
               <p className="text-lg font-bold">Suma: {total} zł</p>
             </div>
 
-            <Button onClick={saveOrder} className="rounded-2xl">
+            <button
+              onClick={saveOrder}
+              className="rounded-2xl border px-4 py-2 font-medium"
+            >
               Zapisz zlecenie
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+          </div>
+        </div>
 
-        <Card className="rounded-2xl shadow-sm">
-          <CardContent className="p-6">
+        <div className="rounded-2xl shadow-sm border bg-white">
+          <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">Podsumowanie</h2>
-            <p>Liczba zleceń: <strong>{orders.length}</strong></p>
-            <p>Suma zarobku: <strong>{monthlyTotal} zł</strong></p>
-          </CardContent>
-        </Card>
+            <p>
+              Liczba zleceń: <strong>{orders.length}</strong>
+            </p>
+            <p>
+              Suma zarobku: <strong>{monthlyTotal} zł</strong>
+            </p>
+          </div>
+        </div>
 
-        <Card className="rounded-2xl shadow-sm">
-          <CardContent className="p-6">
+        <div className="rounded-2xl shadow-sm border bg-white">
+          <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">Historia zleceń</h2>
 
             {orders.length === 0 ? (
@@ -132,21 +167,25 @@ export default function SerwisRobotowApp() {
                     key={order.id}
                     className="border rounded-2xl p-4 bg-white"
                   >
-                    <p><strong>{order.clientName}</strong></p>
+                    <p>
+                      <strong>{order.clientName}</strong>
+                    </p>
                     <p>{order.address}</p>
                     <p>{order.phone}</p>
                     <p>Maszynowo: {order.machineQuantity}</p>
                     <p>Ręcznie: {order.manualQuantity}</p>
                     <p>Punkty: {order.points}</p>
-                    <p>Suma: <strong>{order.total} zł</strong></p>
+                    <p>
+                      Suma: <strong>{order.total} zł</strong>
+                    </p>
                     <p>Data: {order.date}</p>
                     <p>Status: {order.status}</p>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

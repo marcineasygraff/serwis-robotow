@@ -167,8 +167,7 @@ export default function SerwisRobotowApp() {
                 Przewód wkopany ręcznie: <strong>10 zł / mm</strong>
                </p>
               <p>
-                ilość kilometrów: <dojazd>3 zł</strong>
-               </p>
+                ilość kilometrów: <dojazd>3 zł / mm</strong>
               <p>
                 1 punkt: <strong>50 zł</strong>
                </p>

@@ -124,7 +124,7 @@ export default function SerwisRobotowApp() {
                 placeholder="Dojazd"
                 type="number"
                 value={machineQuantity}
-                onChange={(e) => setMachineQuantity(e.target.value)}
+                onChange={(e) => setCost(e.target.value)}
               />
 
               <input

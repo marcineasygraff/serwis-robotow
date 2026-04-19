@@ -7,6 +7,7 @@ export default function SerwisRobotowApp() {
   const [machineQuantity, setMachineQuantity] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");
+  const [activeTab, setActiveTab] = useState("calculator");
   const [orders, setOrders] = useState(() => {
     const savedOrders = localStorage.getItem("serwis-robotow-orders");
     return savedOrders ? JSON.parse(savedOrders) : [];
@@ -76,6 +77,23 @@ export default function SerwisRobotowApp() {
           Kalkulator zleceń + historia klientów
         </p>
 
+        <div className="flex gap-3">
+          <button
+            onClick={() => setActiveTab("calculator")}
+            className="rounded-2xl border px-4 py-2 font-medium"
+          >
+            Kalkulator
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className="rounded-2xl border px-4 py-2 font-medium"
+          >
+            Historia zleceń
+          </button>
+        </div>
+
+        {activeTab === "calculator" && (
+        <>
         <div className="rounded-2xl shadow-sm border bg-white">
           <div className="p-6 space-y-4">
             <h2 className="text-xl font-semibold">Nowe zlecenie</h2>
@@ -104,7 +122,7 @@ export default function SerwisRobotowApp() {
 
               <input
                 className="border rounded-xl p-3 w-full"
-                placeholder="Ilość mm wkopana maszynowo"
+                placeholder="Ilość mm przewodu wkopana maszynowo"
                 type="number"
                 value={machineQuantity}
                 onChange={(e) => setMachineQuantity(e.target.value)}
@@ -112,7 +130,7 @@ export default function SerwisRobotowApp() {
 
               <input
                 className="border rounded-xl p-3 w-full"
-                placeholder="Ilość mm wkopana ręcznie"
+                placeholder="Ilość mm przewodu wkopana ręcznie"
                 type="number"
                 value={manualQuantity}
                 onChange={(e) => setManualQuantity(e.target.value)}
@@ -164,6 +182,10 @@ export default function SerwisRobotowApp() {
           </div>
         </div>
 
+        </>
+        )}
+
+        {activeTab === "history" && (
         <div className="rounded-2xl shadow-sm border bg-white">
           <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">Historia zleceń</h2>
@@ -196,6 +218,7 @@ export default function SerwisRobotowApp() {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

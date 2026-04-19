@@ -119,6 +119,13 @@ export default function SerwisRobotowApp() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
+              
+              <input
+                className="border rounded-xl p-3 w-full"
+                placeholder="Dojazd"
+                value={phone}
+                onChange={(e) => setDojazd(e.target.value)}
+              />
 
               <input
                 className="border rounded-xl p-3 w-full"

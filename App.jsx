@@ -29,7 +29,6 @@ export default function SerwisRobotowApp() {
     return (
       mq * PRICE_MACHINE_PER_METER +
       manq * PRICE_MANUAL_PER_METER +
-      mang * PRINCE_DOJAZd +
       p * PRICE_PER_POINT +
       TRAVEL_COST
     );

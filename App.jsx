@@ -46,6 +46,7 @@ export default function SerwisRobotowApp() {
       dojazd,
       machineQuantity,
       manualQuantity,
+      kosztystale,
       points,
       total,
       date: new Date().toLocaleDateString("pl-PL"),

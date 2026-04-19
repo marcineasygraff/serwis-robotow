@@ -14,9 +14,9 @@ export default function SerwisRobotowApp() {
     return savedOrders ? JSON.parse(savedOrders) : [];
   });
 
-  const PRICE_DOJAZD = 3;
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
+  const PRICE_DOJAZD = 3;
   const PRICE_PER_POINT = 50;
   const TRAVEL_COST = 150;
 
@@ -24,7 +24,8 @@ export default function SerwisRobotowApp() {
     const mq = Number(machineQuantity) || 0;
     const manq = Number(manualQuantity) || 0;
     const p = Number(points) || 0;
-
+    const p = Number(dojazd) || 0;
+    
     return (
       mq * PRICE_MACHINE_PER_METER +
       manq * PRICE_MANUAL_PER_METER +

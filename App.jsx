@@ -29,7 +29,7 @@ export default function SerwisRobotowApp() {
       p * PRICE_PER_POINT +
       TRAVEL_COST
     );
-  }, [machineQuantity, manualQuantity, points]);
+  }, [doajzd, machineQuantity, manualQuantity, points]);
 
   const saveOrder = () => {
     if (!clientName.trim()) return;
@@ -39,6 +39,7 @@ export default function SerwisRobotowApp() {
       clientName,
       address,
       phone,
+      doajzd,
       machineQuantity,
       manualQuantity,
       points,
@@ -122,6 +123,14 @@ export default function SerwisRobotowApp() {
 
               <input
                 className="border rounded-xl p-3 w-full"
+                placeholder="Dojzd"
+                type="number"
+                value={dojazd}
+                onChange={(e) => setDojazd(e.target.value)}
+              />
+              
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Ilość mm przewodu wkopana maszynowo"
                 type="number"
                 value={machineQuantity}
@@ -156,7 +165,10 @@ export default function SerwisRobotowApp() {
                 1 punkt: <strong>50 zł</strong>
               </p>
               <p>
-                Dojazd: <strong>150 zł</strong>
+                Dojazd: <strong>3 zł / mm</strong>
+              </p>
+              <p>
+                Koszty stałe: <strong>150 zł</strong>
               </p>
               <p className="text-lg font-bold">Suma: {total} zł</p>
             </div>

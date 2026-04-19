@@ -16,8 +16,8 @@ export default function SerwisRobotowApp() {
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
   const PRICE_PER_POINT = 50;
-  const TRAVEL_COST = 3;
-  const Koszty_stałe = 150;
+  const TRAVEL_DOJAZD = 3;
+  const KOSZTY_STAŁE = 150;
 
   const total = useMemo(() => {
     const mq = Number(machineQuantity) || 0;
@@ -28,9 +28,9 @@ export default function SerwisRobotowApp() {
       mq * PRICE_MACHINE_PER_METER +
       manq * PRICE_MANUAL_PER_METER +
       p * PRICE_PER_POINT +
-      TRAVEL_COST
+      KOSZTY_STAŁE
     );
-  }, [doajzd, machineQuantity, manualQuantity, points]);
+  }, [koszty stałe, doajzd, machineQuantity, manualQuantity, points]);
 
   const saveOrder = () => {
     if (!clientName.trim()) return;
@@ -166,7 +166,7 @@ export default function SerwisRobotowApp() {
                 1 punkt: <strong>50 zł</strong>
               </p>
               <p>
-                Dojazd: <strong>3 zł / mm</strong>
+                Dojazd: <strong>3 zł /strong>
               </p>
               <p>
                 Koszty stałe: <strong>150 zł</strong>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 export default function SerwisRobotowApp() {
   const [clientName, setClientName] = useState("");
@@ -7,7 +7,10 @@ export default function SerwisRobotowApp() {
   const [machineQuantity, setMachineQuantity] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(() => {
+    const savedOrders = localStorage.getItem("serwis-robotow-orders");
+    return savedOrders ? JSON.parse(savedOrders) : [];
+  });
 
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
@@ -52,6 +55,13 @@ export default function SerwisRobotowApp() {
     setManualQuantity("");
     setPoints("");
   };
+
+  useEffect(() => {
+    localStorage.setItem(
+      "serwis-robotow-orders",
+      JSON.stringify(orders)
+    );
+  }, [orders]);
 
   const monthlyTotal = orders.reduce(
     (sum, item) => sum + item.total,

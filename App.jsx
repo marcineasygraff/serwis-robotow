@@ -171,7 +171,7 @@ export default function SerwisRobotowApp() {
                 1 punkt: <strong>50 zł</strong>
               </p>
               <p>
-                Dojazd: <strong>150 zł</strong>
+                Koszt stały: <strong>150 zł</strong>
               </p>
               <p className="text-lg font-bold">Suma: {total} zł</p>
             </div>

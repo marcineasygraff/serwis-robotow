@@ -40,6 +40,7 @@ export default function SerwisRobotowApp() {
       clientName,
       address,
       phone,
+      dojazd,
       machineQuantity,
       manualQuantity,
       points,
@@ -53,6 +54,7 @@ export default function SerwisRobotowApp() {
     setClientName("");
     setAddress("");
     setPhone("");
+    setDojazd("");
     setMachineQuantity("");
     setManualQuantity("");
     setPoints("");
@@ -123,6 +125,14 @@ export default function SerwisRobotowApp() {
 
               <input
                 className="border rounded-xl p-3 w-full"
+                placeholder="Dojazd"
+                type="number"
+                value={machineQuantity}
+                onChange={(e) => setDojazd(e.target.value)}
+              />  
+              
+              <input
+                className="border rounded-xl p-3 w-full"
                 placeholder="Ilość mm przewodu wkopana maszynowo"
                 type="number"
                 value={machineQuantity}
@@ -152,7 +162,11 @@ export default function SerwisRobotowApp() {
               </p>
               <p>
                 Przewód wkopany ręcznie: <strong>10 zł / mm</strong>
+               </p>
+              <p>
+                1 punkt: <dojazd>3 zł</strong>
               </p>
+            </p>
               <p>
                 1 punkt: <strong>50 zł</strong>
               </p>
@@ -205,6 +219,7 @@ export default function SerwisRobotowApp() {
                     </p>
                     <p>{order.address}</p>
                     <p>{order.phone}</p>
+                    <p>Dojazd: {order.dojazd}</p>
                     <p>Maszynowo: {order.machineQuantity}</p>
                     <p>Ręcznie: {order.manualQuantity}</p>
                     <p>Punkty: {order.points}</p>

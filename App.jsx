@@ -104,7 +104,7 @@ export default function SerwisRobotowApp() {
 
               <input
                 className="border rounded-xl p-3 w-full"
-                placeholder="Ilość mm przewodu wkopana maszynowo"
+                placeholder="Ilość mm wkopana maszynowo"
                 type="number"
                 value={machineQuantity}
                 onChange={(e) => setMachineQuantity(e.target.value)}
@@ -112,7 +112,7 @@ export default function SerwisRobotowApp() {
 
               <input
                 className="border rounded-xl p-3 w-full"
-                placeholder="Ilość mm przewodu wkopana ręcznie"
+                placeholder="Ilość mm wkopana ręcznie"
                 type="number"
                 value={manualQuantity}
                 onChange={(e) => setManualQuantity(e.target.value)}

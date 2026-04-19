@@ -124,7 +124,8 @@ export default function SerwisRobotowApp() {
                 className="border rounded-xl p-3 w-full"
                 placeholder="Dojazd"
                 value={numer}
-                onChange={(e) => setDojazd(e.target.value)}
+                 value={machineQuantity}
+                onChange={(e) => setMachineQuantity(e.target.value)}
               />
 
               <input

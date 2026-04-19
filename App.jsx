@@ -16,7 +16,8 @@ export default function SerwisRobotowApp() {
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
   const PRICE_PER_POINT = 50;
-  const TRAVEL_COST = 3;
+  const TRAVEL_COST = 150;
+
   const total = useMemo(() => {
     const mq = Number(machineQuantity) || 0;
     const manq = Number(manualQuantity) || 0;
@@ -118,14 +119,6 @@ export default function SerwisRobotowApp() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
-              
-              <input
-                className="border rounded-xl p-3 w-full"
-                placeholder="Dojazd"
-                type="number"
-                value={machineQuantity}
-                onChange={(e) => setMachineQuantity(e.target.value)}
-              />
 
               <input
                 className="border rounded-xl p-3 w-full"
@@ -163,7 +156,7 @@ export default function SerwisRobotowApp() {
                 1 punkt: <strong>50 zł</strong>
               </p>
               <p>
-                Dojazd: <strong>3 zł</strong>
+                Dojazd: <strong>150 zł</strong>
               </p>
               <p className="text-lg font-bold">Suma: {total} zł</p>
             </div>

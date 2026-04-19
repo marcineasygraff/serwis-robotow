@@ -14,6 +14,7 @@ export default function SerwisRobotowApp() {
     return savedOrders ? JSON.parse(savedOrders) : [];
   });
 
+  const PRICE_DOJAZD = 3;
   const PRICE_MACHINE_PER_METER = 7;
   const PRICE_MANUAL_PER_METER = 10;
   const PRICE_PER_POINT = 50;

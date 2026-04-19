@@ -4,7 +4,7 @@ export default function SerwisRobotowApp() {
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [Koszty_stałe, setKoszty_stałe] = useState("");
+  const [KosztyStałe, setKosztyStałe] = useState("");
   const [dojazd, setDojazd] = useState("");
   const [machineQuantity, setMachineQuantity] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
@@ -43,6 +43,7 @@ export default function SerwisRobotowApp() {
       address,
       phone,
       doajzd,
+      kosztyStałe,
       machineQuantity,
       manualQuantity,
       points,
@@ -56,6 +57,7 @@ export default function SerwisRobotowApp() {
     setClientName("");
     setAddress("");
     setPhone("");
+    setKosztyStałe("");
     setMachineQuantity("");
     setManualQuantity("");
     setPoints("");
@@ -220,6 +222,7 @@ export default function SerwisRobotowApp() {
                     <p>{order.address}</p>
                     <p>{order.phone}</p>
                     <p>Maszynowo: {order.machineQuantity}</p>
+                    <p>KosztStałe: {order.machineQuantity}</p>
                     <p>Ręcznie: {order.manualQuantity}</p>
                     <p>Punkty: {order.points}</p>
                     <p>

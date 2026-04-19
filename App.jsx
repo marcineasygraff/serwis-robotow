@@ -4,7 +4,7 @@ export default function SerwisRobotowApp() {
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [machineQuantity, setDojazd] = useState("");
+  const [dojazd, setDojazd] = useState("");
   const [machineQuantity, setMachineQuantity] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");

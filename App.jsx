@@ -49,12 +49,14 @@ export default function SerwisRobotowApp() {
     const travelKm = Number(km) || 0;
 
     return (
-      mq * PRICE_MACHINE_PER_METER +
-      manq * PRICE_MANUAL_PER_METER +
-      p * PRICE_PER_POINT +
-      travelKm * PRICE_PER_KM +
-      FIXED_TRAVEL_COST
-    );
+  mq * PRICE_MACHINE_PER_METER +
+  manq * PRICE_MANUAL_PER_METER +
+  p * PRICE_PER_POINT +
+  travelKm * PRICE_PER_KM +
+  (mq + manq + p + travelKm > 0
+    ? FIXED_TRAVEL_COST
+    : 0)
+);
   }, [machineQuantity, manualQuantity, points, km]);
 
   // Reset formularza

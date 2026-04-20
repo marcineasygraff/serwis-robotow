@@ -2,6 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 
 export default function SerwisRobotowApp() {
 
+  // DARK MODE
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("darkMode") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  // Dane formularza
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,13 +36,11 @@ export default function SerwisRobotowApp() {
   const formatCurrency = (value) =>
     new Intl.NumberFormat("pl-PL").format(value);
 
-  // Wczytanie localStorage
+  // Wczytanie danych
   useEffect(() => {
 
     const saved =
-      localStorage.getItem(
-        "serwis-robotow-orders"
-      );
+      localStorage.getItem("serwis-robotow-orders");
 
     if (saved) {
 
@@ -46,7 +54,7 @@ export default function SerwisRobotowApp() {
 
   }, []);
 
-  // Zapis localStorage
+  // Zapis danych
   useEffect(() => {
 
     localStorage.setItem(
@@ -59,16 +67,10 @@ export default function SerwisRobotowApp() {
   // Liczenie sumy
   const total = useMemo(() => {
 
-    const mq =
-      Number(machineQuantity) || 0;
-
-    const manq =
-      Number(manualQuantity) || 0;
-
+    const mq = Number(machineQuantity) || 0;
+    const manq = Number(manualQuantity) || 0;
     const p = Number(points) || 0;
-
-    const travelKm =
-      Number(km) || 0;
+    const travelKm = Number(km) || 0;
 
     const calculated =
       mq * PRICE_MACHINE_PER_METER +
@@ -77,8 +79,7 @@ export default function SerwisRobotowApp() {
       travelKm * PRICE_PER_KM;
 
     return calculated > 0
-      ? calculated +
-          FIXED_TRAVEL_COST
+      ? calculated + FIXED_TRAVEL_COST
       : 0;
 
   }, [
@@ -102,7 +103,7 @@ export default function SerwisRobotowApp() {
 
   };
 
-  // Zapis zlecenia
+  // Zapis
   const saveOrder = () => {
 
     if (!clientName.trim()) {
@@ -126,12 +127,10 @@ export default function SerwisRobotowApp() {
       phone,
 
       machineQuantity:
-        Number(machineQuantity) ||
-        0,
+        Number(machineQuantity) || 0,
 
       manualQuantity:
-        Number(manualQuantity) ||
-        0,
+        Number(manualQuantity) || 0,
 
       points:
         Number(points) || 0,
@@ -142,9 +141,7 @@ export default function SerwisRobotowApp() {
       total,
 
       date:
-        new Date().toLocaleDateString(
-          "pl-PL"
-        ),
+        new Date().toLocaleDateString("pl-PL"),
 
     };
 
@@ -174,11 +171,7 @@ export default function SerwisRobotowApp() {
   // Usuwanie
   const deleteOrder = (id) => {
 
-    if (
-      window.confirm(
-        "Usunąć zlecenie?"
-      )
-    ) {
+    if (window.confirm("Usunąć zlecenie?")) {
 
       setOrders((prev) =>
         prev.filter(
@@ -196,12 +189,8 @@ export default function SerwisRobotowApp() {
     setClientName(order.clientName);
     setAddress(order.address);
     setPhone(order.phone);
-    setMachineQuantity(
-      order.machineQuantity
-    );
-    setManualQuantity(
-      order.manualQuantity
-    );
+    setMachineQuantity(order.machineQuantity);
+    setManualQuantity(order.manualQuantity);
     setPoints(order.points);
     setKm(order.km);
 
@@ -216,9 +205,7 @@ export default function SerwisRobotowApp() {
     orders.filter((order) =>
       order.clientName
         .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        )
+        .includes(search.toLowerCase())
     );
 
   // Suma
@@ -231,17 +218,40 @@ export default function SerwisRobotowApp() {
 
   return (
 
-    <div className="min-h-screen bg-black text-white p-6">
+    <div
+      className={`min-h-screen p-6 ${
+        darkMode
+          ? "bg-black text-white"
+          : "bg-white text-black"
+      }`}
+    >
 
       <div className="max-w-5xl mx-auto space-y-6">
 
-        <h1 className="text-3xl font-bold text-white">
-          Serwis Robotów
-        </h1>
+        {/* HEADER */}
 
-        <p className="text-white/60">
-          Kalkulator zleceń + historia klientów
-        </p>
+        <div className="flex justify-between items-center">
+
+          <h1 className="text-3xl font-bold">
+            Serwis Robotów
+          </h1>
+
+          <button
+            onClick={() =>
+              setDarkMode(!darkMode)
+            }
+            className={`rounded-xl border px-4 py-2 text-sm ${
+              darkMode
+                ? "border-white/20 bg-black hover:bg-white/10"
+                : "border-black/20 bg-white hover:bg-black/10"
+            }`}
+          >
+            {darkMode
+              ? "☀️ Jasny"
+              : "🌙 Ciemny"}
+          </button>
+
+        </div>
 
         {/* TABY */}
 
@@ -251,7 +261,7 @@ export default function SerwisRobotowApp() {
             onClick={() =>
               setActiveTab("calculator")
             }
-            className="rounded-xl border border-white/20 bg-black hover:bg-white/10 px-4 py-2 text-white"
+            className="rounded-xl border px-4 py-2"
           >
             Kalkulator
           </button>
@@ -260,7 +270,7 @@ export default function SerwisRobotowApp() {
             onClick={() =>
               setActiveTab("history")
             }
-            className="rounded-xl border border-white/20 bg-black hover:bg-white/10 px-4 py-2 text-white"
+            className="rounded-xl border px-4 py-2"
           >
             Historia
           </button>
@@ -271,9 +281,15 @@ export default function SerwisRobotowApp() {
 
         {activeTab === "calculator" && (
 
-          <div className="rounded-2xl border border-white/20 bg-black p-6 space-y-4">
+          <div
+            className={`rounded-2xl border p-6 space-y-4 ${
+              darkMode
+                ? "border-white/20 bg-black"
+                : "border-black/20 bg-white"
+            }`}
+          >
 
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-xl font-semibold">
 
               {editingId
                 ? "Edytuj zlecenie"
@@ -284,247 +300,75 @@ export default function SerwisRobotowApp() {
             <div className="grid md:grid-cols-2 gap-4">
 
               {[
+                { value: clientName, set: setClientName, placeholder: "Imię klienta" },
+                { value: phone, set: setPhone, placeholder: "Telefon" },
+                { value: address, set: setAddress, placeholder: "Adres" }
+              ].map((field, i) => (
 
-                {
-                  placeholder:
-                    "Imię klienta",
-                  value: clientName,
-                  setter:
-                    setClientName,
-                },
+                <input
+                  key={i}
+                  placeholder={field.placeholder}
+                  value={field.value}
+                  onChange={(e) =>
+                    field.set(e.target.value)
+                  }
+                  className={`border rounded-xl p-3 ${
+                    darkMode
+                      ? "border-white/20 bg-black text-white"
+                      : "border-black/20 bg-white text-black"
+                  }`}
+                />
 
-                {
-                  placeholder:
-                    "Telefon",
-                  value: phone,
-                  setter: setPhone,
-                },
+              ))}
 
-                {
-                  placeholder:
-                    "Adres",
-                  value: address,
-                  setter:
-                    setAddress,
-                },
-
-              ].map(
-                (
-                  field,
-                  index
-                ) => (
-
-                  <input
-                    key={index}
-                    className="border border-white/20 bg-black text-white rounded-xl p-3"
-                    placeholder={
-                      field.placeholder
-                    }
-                    value={
-                      field.value
-                    }
-                    onChange={(e) =>
-                      field.setter(
-                        e.target.value
-                      )
-                    }
-                  />
-
-                )
-              )}
-
-              <input
-                type="number"
-                placeholder="Maszynowo (mm)"
-                value={machineQuantity}
-                onChange={(e) =>
-                  setMachineQuantity(
-                    e.target.value
-                  )
-                }
-                className="border border-white/20 bg-black text-white rounded-xl p-3"
+              <input type="number" placeholder="Maszynowo (mm)" value={machineQuantity}
+                onChange={(e)=>setMachineQuantity(e.target.value)}
+                className={`border rounded-xl p-3 ${
+                  darkMode
+                    ? "border-white/20 bg-black text-white"
+                    : "border-black/20 bg-white text-black"
+                }`}
               />
 
-              <input
-                type="number"
-                placeholder="Ręcznie (mm)"
-                value={manualQuantity}
-                onChange={(e) =>
-                  setManualQuantity(
-                    e.target.value
-                  )
-                }
-                className="border border-white/20 bg-black text-white rounded-xl p-3"
+              <input type="number" placeholder="Ręcznie (mm)" value={manualQuantity}
+                onChange={(e)=>setManualQuantity(e.target.value)}
+                className={`border rounded-xl p-3 ${
+                  darkMode
+                    ? "border-white/20 bg-black text-white"
+                    : "border-black/20 bg-white text-black"
+                }`}
               />
 
-              <input
-                type="number"
-                placeholder="Punkty"
-                value={points}
-                onChange={(e) =>
-                  setPoints(
-                    e.target.value
-                  )
-                }
-                className="border border-white/20 bg-black text-white rounded-xl p-3"
+              <input type="number" placeholder="Punkty" value={points}
+                onChange={(e)=>setPoints(e.target.value)}
+                className={`border rounded-xl p-3 ${
+                  darkMode
+                    ? "border-white/20 bg-black text-white"
+                    : "border-black/20 bg-white text-black"
+                }`}
               />
 
-              <input
-                type="number"
-                placeholder="Ilość km dojazdu"
-                value={km}
-                onChange={(e) =>
-                  setKm(
-                    e.target.value
-                  )
-                }
-                className="border border-white/20 bg-black text-white rounded-xl p-3"
+              <input type="number" placeholder="Ilość km dojazdu" value={km}
+                onChange={(e)=>setKm(e.target.value)}
+                className={`border rounded-xl p-3 ${
+                  darkMode
+                    ? "border-white/20 bg-black text-white"
+                    : "border-black/20 bg-white text-black"
+                }`}
               />
 
             </div>
 
-            {/* SUMA */}
-
-            <div className="border border-white/20 rounded-xl p-4 bg-black">
-
-              <p>Maszynowo: 7 zł / mm</p>
-              <p>Ręcznie: 10 zł / mm</p>
-              <p>Punkty: 50 zł</p>
-              <p>Dojazd: 3 zł / km</p>
-              <p>Koszt stały: 150 zł</p>
-
-              <p className="text-lg font-bold mt-2">
-
-                Suma:
-                {" "}
-                {formatCurrency(total)} zł
-
-              </p>
-
+            <div className="font-bold text-lg">
+              Suma: {formatCurrency(total)} zł
             </div>
 
-            <div className="flex gap-2">
-
-              <button
-                onClick={saveOrder}
-                className="rounded-xl border border-green-600 bg-green-700 hover:bg-green-600 px-4 py-2"
-              >
-
-                {editingId
-                  ? "Zapisz zmiany"
-                  : "Zapisz zlecenie"}
-
-              </button>
-
-              {editingId && (
-
-                <button
-                  onClick={resetForm}
-                  className="rounded-xl border border-red-600 bg-red-700 hover:bg-red-600 px-4 py-2"
-                >
-                  Anuluj
-                </button>
-
-              )}
-
-            </div>
-
-          </div>
-
-        )}
-
-        {/* HISTORIA */}
-
-        {activeTab === "history" && (
-
-          <div className="rounded-2xl border border-white/20 bg-black p-6 space-y-4">
-
-            <h2 className="text-xl font-semibold">
-              Historia zleceń
-            </h2>
-
-            <input
-              placeholder="Szukaj klienta..."
-              value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-              className="border border-white/20 bg-black text-white rounded-xl p-3 w-full"
-            />
-
-            {filteredOrders.map(
-              (order) => (
-
-                <div
-                  key={order.id}
-                  className="border border-white/20 rounded-xl p-4 bg-black"
-                >
-
-                  <p>
-                    <strong>
-                      {order.clientName}
-                    </strong>
-                  </p>
-
-                  <p>
-                    {order.address}
-                  </p>
-
-                  <p>
-                    {order.phone}
-                  </p>
-
-                  <p>
-
-                    Suma:
-
-                    <strong>
-                      {" "}
-                      {formatCurrency(
-                        order.total
-                      )} zł
-                    </strong>
-
-                  </p>
-
-                  <div className="flex gap-2 mt-2">
-
-                    <button
-                      onClick={() =>
-                        editOrder(order)
-                      }
-                      className="rounded-xl border border-blue-600 bg-blue-700 hover:bg-blue-600 px-3 py-1 text-sm"
-                    >
-                      Edytuj
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        deleteOrder(
-                          order.id
-                        )
-                      }
-                      className="rounded-xl border border-red-600 bg-red-700 hover:bg-red-600 px-3 py-1 text-sm"
-                    >
-                      Usuń
-                    </button>
-
-                  </div>
-
-                </div>
-
-              )
-            )}
-
-            <p className="text-lg font-bold">
-
-              Łączna suma:
-              {" "}
-              {formatCurrency(totalSum)} zł
-
-            </p>
+            <button
+              onClick={saveOrder}
+              className="rounded-xl border border-green-600 bg-green-700 hover:bg-green-600 px-4 py-2"
+            >
+              {editingId ? "Zapisz zmiany" : "Zapisz zlecenie"}
+            </button>
 
           </div>
 

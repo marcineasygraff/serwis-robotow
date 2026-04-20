@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 export default function SerwisRobotowApp() {
   // =========================
-  // 🌙 DARK MODE (SYSTEM + MANUAL)
+  // 🌙 DARK MODE (MANUAL)
   // =========================
 
   const getSystemDark = () =>

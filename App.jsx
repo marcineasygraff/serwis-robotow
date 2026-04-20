@@ -1,17 +1,25 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 export default function SerwisRobotowApp() {
-
-  // DARK MODE
+  // =========================
+  // 🌙 DARK MODE
+  // =========================
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("darkMode") === "true";
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("darkMode") === "true";
+    }
+    return false;
   });
 
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("darkMode", darkMode);
+    }
   }, [darkMode]);
 
-  // Dane formularza
+  // =========================
+  // 📋 FORM STATE
+  // =========================
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -19,79 +27,127 @@ export default function SerwisRobotowApp() {
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");
   const [km, setKm] = useState("");
-  const [activeTab, setActiveTab] = useState("calculator");
 
+  const [activeTab, setActiveTab] = useState("calculator");
   const [orders, setOrders] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
 
-  // Cennik
-  const PRICE_MACHINE_PER_METER = 7;
-  const PRICE_MANUAL_PER_METER = 10;
-  const PRICE_PER_POINT = 50;
-  const PRICE_PER_KM = 3;
-  const FIXED_TRAVEL_COST = 150;
+  // =========================
+  // 💰 CENNIK
+  // =========================
+  const PRICE_MACHINE = 7;
+  const PRICE_MANUAL = 10;
+  const PRICE_POINT = 50;
+  const PRICE_KM = 3;
+  const FIXED_TRAVEL = 150;
 
-  // Format pieniędzy
+  // =========================
+  // 🧠 HELPERY
+  // =========================
+  const num = (v) => Number(v) || 0;
+
   const formatCurrency = (value) =>
-    new Intl.NumberFormat("pl-PL").format(value);
+    new Intl.NumberFormat("pl-PL", {
+      style: "currency",
+      currency: "PLN",
+    }).format(value);
 
-  // Wczytanie danych
+  const generateId = () => {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return String(Date.now()) + Math.random().toString(16).slice(2);
+  };
+
+  const validatePhone = (phone) =>
+    !phone || /^[0-9]{9}$/.test(phone);
+
+  const inputClass = () =>
+    `border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+      darkMode
+        ? "border-white/20 bg-black text-white"
+        : "border-black/20 bg-white text-black"
+    }`;
+
+  const tabClass = (tab) =>
+    `rounded-xl border px-4 py-2 ${
+      activeTab === tab
+        ? "bg-blue-600 text-white"
+        : darkMode
+        ? "border-white/20"
+        : "border-black/20"
+    }`;
+
+  // =========================
+  // 💾 LOCAL STORAGE LOAD
+  // =========================
   useEffect(() => {
+    if (typeof window === "undefined") return;
 
-    const saved =
-      localStorage.getItem("serwis-robotow-orders");
+    const saved = localStorage.getItem("serwis-robotow-orders");
 
     if (saved) {
-
       try {
         setOrders(JSON.parse(saved));
       } catch {
         setOrders([]);
       }
-
     }
-
   }, []);
 
-  // Zapis danych
+  // =========================
+  // 💾 LOCAL STORAGE SAVE
+  // =========================
   useEffect(() => {
+    if (typeof window === "undefined") return;
 
     localStorage.setItem(
       "serwis-robotow-orders",
       JSON.stringify(orders)
     );
-
   }, [orders]);
 
-  // Liczenie sumy
+  // =========================
+  // 💰 LICZENIE KOSZTÓW (POPRAWIONE)
+  // =========================
   const total = useMemo(() => {
+    const mq = num(machineQuantity);
+    const manq = num(manualQuantity);
+    const p = num(points);
+    const travelKm = num(km);
 
-    const mq = Number(machineQuantity) || 0;
-    const manq = Number(manualQuantity) || 0;
-    const p = Number(points) || 0;
-    const travelKm = Number(km) || 0;
+    const base =
+      mq * PRICE_MACHINE +
+      manq * PRICE_MANUAL +
+      p * PRICE_POINT +
+      travelKm * PRICE_KM;
 
-    const calculated =
-      mq * PRICE_MACHINE_PER_METER +
-      manq * PRICE_MANUAL_PER_METER +
-      p * PRICE_PER_POINT +
-      travelKm * PRICE_PER_KM;
+    // ✔ koszt stały tylko jeśli istnieje REALNE zlecenie
+    const hasOrder = mq + manq + p + travelKm > 0;
 
-    return calculated > 0
-      ? calculated + FIXED_TRAVEL_COST
-      : 0;
+    return base + (hasOrder ? FIXED_TRAVEL : 0);
+  }, [machineQuantity, manualQuantity, points, km]);
 
-  }, [
-    machineQuantity,
-    manualQuantity,
-    points,
-    km,
-  ]);
+  // =========================
+  // 🔎 FILTR
+  // =========================
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) =>
+      (o.clientName || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
+  }, [orders, search]);
 
-  // Reset formularza
+  const totalSum = useMemo(() => {
+    return filteredOrders.reduce((sum, o) => sum + o.total, 0);
+  }, [filteredOrders]);
+
+  // =========================
+  // 🔄 RESET FORM
+  // =========================
   const resetForm = () => {
-
     setClientName("");
     setAddress("");
     setPhone("");
@@ -100,284 +156,226 @@ export default function SerwisRobotowApp() {
     setPoints("");
     setKm("");
     setEditingId(null);
-
   };
 
-  // Zapis
+  // =========================
+  // 💾 ZAPIS
+  // =========================
   const saveOrder = () => {
-
     if (!clientName.trim()) {
       alert("Podaj imię klienta");
       return;
     }
 
-    if (phone && phone.length < 9) {
+    if (!validatePhone(phone)) {
       alert("Niepoprawny numer telefonu");
       return;
     }
 
-    const orderData = {
-
-      id:
-        editingId ||
-        Date.now(),
-
+    const order = {
+      id: editingId || generateId(),
       clientName,
       address,
       phone,
 
-      machineQuantity:
-        Number(machineQuantity) || 0,
-
-      manualQuantity:
-        Number(manualQuantity) || 0,
-
-      points:
-        Number(points) || 0,
-
-      km:
-        Number(km) || 0,
+      machineQuantity: num(machineQuantity),
+      manualQuantity: num(manualQuantity),
+      points: num(points),
+      km: num(km),
 
       total,
-
-      date:
-        new Date().toLocaleDateString("pl-PL"),
-
+      date: new Date().toLocaleDateString("pl-PL"),
     };
 
     if (editingId) {
-
       setOrders((prev) =>
-        prev.map((order) =>
-          order.id === editingId
-            ? orderData
-            : order
-        )
+        prev.map((o) => (o.id === editingId ? order : o))
       );
-
     } else {
-
-      setOrders((prev) => [
-        orderData,
-        ...prev,
-      ]);
-
+      setOrders((prev) => [order, ...prev]);
     }
 
     resetForm();
-
+    setActiveTab("history");
   };
 
-  // Usuwanie
   const deleteOrder = (id) => {
-
     if (window.confirm("Usunąć zlecenie?")) {
-
-      setOrders((prev) =>
-        prev.filter(
-          (o) => o.id !== id
-        )
-      );
-
+      setOrders((prev) => prev.filter((o) => o.id !== id));
     }
-
   };
 
-  // Edycja
-  const editOrder = (order) => {
-
-    setClientName(order.clientName);
-    setAddress(order.address);
-    setPhone(order.phone);
-    setMachineQuantity(order.machineQuantity);
-    setManualQuantity(order.manualQuantity);
-    setPoints(order.points);
-    setKm(order.km);
-
-    setEditingId(order.id);
-
+  const editOrder = (o) => {
+    setClientName(o.clientName);
+    setAddress(o.address);
+    setPhone(o.phone);
+    setMachineQuantity(o.machineQuantity);
+    setManualQuantity(o.manualQuantity);
+    setPoints(o.points);
+    setKm(o.km);
+    setEditingId(o.id);
     setActiveTab("calculator");
-
   };
 
-  // Filtrowanie
-  const filteredOrders =
-    orders.filter((order) =>
-      order.clientName
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    );
-
-  // Suma
-  const totalSum =
-    filteredOrders.reduce(
-      (sum, item) =>
-        sum + item.total,
-      0
-    );
-
+  // =========================
+  // 🎨 UI
+  // =========================
   return (
-
     <div
       className={`min-h-screen p-6 ${
-        darkMode
-          ? "bg-black text-white"
-          : "bg-white text-black"
+        darkMode ? "bg-black text-white" : "bg-white text-black"
       }`}
     >
-
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* HEADER */}
-
         <div className="flex justify-between items-center">
-
           <h1 className="text-3xl font-bold">
             Serwis Robotów
           </h1>
 
           <button
-            onClick={() =>
-              setDarkMode(!darkMode)
-            }
+            onClick={() => setDarkMode(!darkMode)}
             className={`rounded-xl border px-4 py-2 text-sm ${
-              darkMode
-                ? "border-white/20 bg-black hover:bg-white/10"
-                : "border-black/20 bg-white hover:bg-black/10"
-            }`}
-          >
-            {darkMode
-              ? "☀️ Jasny"
-              : "🌙 Ciemny"}
-          </button>
-
-        </div>
-
-        {/* TABY */}
-
-        <div className="flex gap-3">
-
-          <button
-            onClick={() =>
-              setActiveTab("calculator")
-            }
-            className="rounded-xl border px-4 py-2"
-          >
-            Kalkulator
-          </button>
-
-          <button
-            onClick={() =>
-              setActiveTab("history")
-            }
-            className="rounded-xl border px-4 py-2"
-          >
-            Historia
-          </button>
-
-        </div>
-
-        {/* KALKULATOR */}
-
-        {activeTab === "calculator" && (
-
-          <div
-            className={`rounded-2xl border p-6 space-y-4 ${
               darkMode
                 ? "border-white/20 bg-black"
                 : "border-black/20 bg-white"
             }`}
           >
+            {darkMode ? "☀️ Jasny" : "🌙 Ciemny"}
+          </button>
+        </div>
+
+        {/* TABS */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => setActiveTab("calculator")}
+            className={tabClass("calculator")}
+          >
+            Kalkulator
+          </button>
+
+          <button
+            onClick={() => setActiveTab("history")}
+            className={tabClass("history")}
+          >
+            Historia
+          </button>
+        </div>
+
+        {/* CALCULATOR */}
+        {activeTab === "calculator" && (
+          <div className={`border p-6 rounded-2xl space-y-4 ${
+            darkMode ? "border-white/20" : "border-black/20"
+          }`}>
 
             <h2 className="text-xl font-semibold">
-
-              {editingId
-                ? "Edytuj zlecenie"
-                : "Nowe zlecenie"}
-
+              {editingId ? "Edytuj zlecenie" : "Nowe zlecenie"}
             </h2>
 
             <div className="grid md:grid-cols-2 gap-4">
 
-              {[
-                { value: clientName, set: setClientName, placeholder: "Imię klienta" },
-                { value: phone, set: setPhone, placeholder: "Telefon" },
-                { value: address, set: setAddress, placeholder: "Adres" }
-              ].map((field, i) => (
-
-                <input
-                  key={i}
-                  placeholder={field.placeholder}
-                  value={field.value}
-                  onChange={(e) =>
-                    field.set(e.target.value)
-                  }
-                  className={`border rounded-xl p-3 ${
-                    darkMode
-                      ? "border-white/20 bg-black text-white"
-                      : "border-black/20 bg-white text-black"
-                  }`}
-                />
-
-              ))}
-
-              <input type="number" placeholder="Maszynowo (mm)" value={machineQuantity}
-                onChange={(e)=>setMachineQuantity(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+              <input className={inputClass()} placeholder="Imię klienta"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
               />
 
-              <input type="number" placeholder="Ręcznie (mm)" value={manualQuantity}
-                onChange={(e)=>setManualQuantity(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+              <input className={inputClass()} placeholder="Telefon"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
 
-              <input type="number" placeholder="Punkty" value={points}
-                onChange={(e)=>setPoints(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+              <input className={inputClass()} placeholder="Adres"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
               />
 
-              <input type="number" placeholder="Ilość km dojazdu" value={km}
-                onChange={(e)=>setKm(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+              <input className={inputClass()} type="number" placeholder="Maszynowo"
+                value={machineQuantity}
+                onChange={(e) => setMachineQuantity(e.target.value)}
+              />
+
+              <input className={inputClass()} type="number" placeholder="Ręcznie"
+                value={manualQuantity}
+                onChange={(e) => setManualQuantity(e.target.value)}
+              />
+
+              <input className={inputClass()} type="number" placeholder="Punkty"
+                value={points}
+                onChange={(e) => setPoints(e.target.value)}
+              />
+
+              <input className={inputClass()} type="number" placeholder="Km"
+                value={km}
+                onChange={(e) => setKm(e.target.value)}
               />
 
             </div>
 
-            <div className="font-bold text-lg">
-              Suma: {formatCurrency(total)} zł
+            <div className="text-lg font-bold">
+              Suma: {formatCurrency(total)}
             </div>
 
             <button
               onClick={saveOrder}
-              className="rounded-xl border border-green-600 bg-green-700 hover:bg-green-600 px-4 py-2"
+              className="px-4 py-2 rounded-xl bg-green-700 text-white"
             >
-              {editingId ? "Zapisz zmiany" : "Zapisz zlecenie"}
+              Zapisz
             </button>
 
           </div>
+        )}
 
+        {/* HISTORY */}
+        {activeTab === "history" && (
+          <div className="border p-6 rounded-2xl">
+            <h2 className="text-xl font-semibold mb-4">
+              Historia
+            </h2>
+
+            <div className="font-bold mb-4">
+              Suma: {formatCurrency(totalSum)}
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th>Klient</th>
+                    <th>Usługa</th>
+                    <th>Suma</th>
+                    <th>Akcje</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredOrders.map((o) => (
+                    <tr key={o.id} className="border-b">
+                      <td className="p-2">{o.clientName}</td>
+
+                      <td className="p-2 text-xs opacity-80">
+                        {o.machineQuantity} / {o.manualQuantity} / {o.points} / {o.km} km
+                      </td>
+
+                      <td className="p-2 font-bold">
+                        {formatCurrency(o.total)}
+                      </td>
+
+                      <td className="p-2 space-x-2">
+                        <button onClick={() => editOrder(o)}>Edytuj</button>
+                        <button onClick={() => deleteOrder(o.id)}>Usuń</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+
+              </table>
+            </div>
+
+          </div>
         )}
 
       </div>
-
     </div>
-
   );
-
 }

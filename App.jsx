@@ -2,13 +2,18 @@ import React, { useEffect, useMemo, useState } from "react";
 
 export default function SerwisRobotowApp() {
 
-  // DARK MODE
+  // DARK MODE (bezpieczny localStorage)
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("darkMode") === "true";
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("darkMode") === "true";
+    }
+    return false;
   });
 
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("darkMode", darkMode);
+    }
   }, [darkMode]);
 
   // Dane formularza
@@ -19,6 +24,7 @@ export default function SerwisRobotowApp() {
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");
   const [km, setKm] = useState("");
+
   const [activeTab, setActiveTab] = useState("calculator");
 
   const [orders, setOrders] = useState([]);
@@ -32,12 +38,17 @@ export default function SerwisRobotowApp() {
   const PRICE_PER_KM = 3;
   const FIXED_TRAVEL_COST = 150;
 
-  // Format pieniędzy
+  // Format PLN
   const formatCurrency = (value) =>
-    new Intl.NumberFormat("pl-PL").format(value);
+    new Intl.NumberFormat("pl-PL", {
+      style: "currency",
+      currency: "PLN",
+    }).format(value);
 
   // Wczytanie danych
   useEffect(() => {
+
+    if (typeof window === "undefined") return;
 
     const saved =
       localStorage.getItem("serwis-robotow-orders");
@@ -46,7 +57,8 @@ export default function SerwisRobotowApp() {
 
       try {
         setOrders(JSON.parse(saved));
-      } catch {
+      } catch (e) {
+        console.error("Błąd odczytu localStorage:", e);
         setOrders([]);
       }
 
@@ -56,6 +68,8 @@ export default function SerwisRobotowApp() {
 
   // Zapis danych
   useEffect(() => {
+
+    if (typeof window === "undefined") return;
 
     localStorage.setItem(
       "serwis-robotow-orders",
@@ -78,9 +92,10 @@ export default function SerwisRobotowApp() {
       p * PRICE_PER_POINT +
       travelKm * PRICE_PER_KM;
 
-    return calculated > 0
-      ? calculated + FIXED_TRAVEL_COST
-      : 0;
+    return calculated +
+      (travelKm > 0
+        ? FIXED_TRAVEL_COST
+        : 0);
 
   }, [
     machineQuantity,
@@ -99,11 +114,23 @@ export default function SerwisRobotowApp() {
     setManualQuantity("");
     setPoints("");
     setKm("");
+
     setEditingId(null);
 
   };
 
-  // Zapis
+  // Walidacja telefonu
+  const validatePhone = (phone) => {
+
+    if (!phone) return true;
+
+    const phoneRegex = /^[0-9]{9}$/;
+
+    return phoneRegex.test(phone);
+
+  };
+
+  // Zapis zlecenia
   const saveOrder = () => {
 
     if (!clientName.trim()) {
@@ -111,7 +138,7 @@ export default function SerwisRobotowApp() {
       return;
     }
 
-    if (phone && phone.length < 9) {
+    if (!validatePhone(phone)) {
       alert("Niepoprawny numer telefonu");
       return;
     }
@@ -120,7 +147,7 @@ export default function SerwisRobotowApp() {
 
       id:
         editingId ||
-        Date.now(),
+        crypto.randomUUID(),
 
       clientName,
       address,
@@ -157,14 +184,15 @@ export default function SerwisRobotowApp() {
 
     } else {
 
-      setOrders((prev) => [
-        orderData,
-        ...prev,
-      ]);
+      setOrders((prev) =>
+        [orderData, ...prev]
+      );
 
     }
 
     resetForm();
+
+    setActiveTab("history");
 
   };
 
@@ -189,6 +217,7 @@ export default function SerwisRobotowApp() {
     setClientName(order.clientName);
     setAddress(order.address);
     setPhone(order.phone);
+
     setMachineQuantity(order.machineQuantity);
     setManualQuantity(order.manualQuantity);
     setPoints(order.points);
@@ -205,10 +234,12 @@ export default function SerwisRobotowApp() {
     orders.filter((order) =>
       order.clientName
         .toLowerCase()
-        .includes(search.toLowerCase())
+        .includes(
+          search.toLowerCase()
+        )
     );
 
-  // Suma
+  // Suma historii
   const totalSum =
     filteredOrders.reduce(
       (sum, item) =>
@@ -312,7 +343,7 @@ export default function SerwisRobotowApp() {
                   onChange={(e) =>
                     field.set(e.target.value)
                   }
-                  className={`border rounded-xl p-3 ${
+                  className={`border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     darkMode
                       ? "border-white/20 bg-black text-white"
                       : "border-black/20 bg-white text-black"
@@ -321,53 +352,51 @@ export default function SerwisRobotowApp() {
 
               ))}
 
-              <input type="number" placeholder="Maszynowo (mm)" value={machineQuantity}
+              <input
+                type="number"
+                placeholder="Maszynowo (mm)"
+                value={machineQuantity}
                 onChange={(e)=>setMachineQuantity(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+                className="border rounded-xl p-3"
               />
 
-              <input type="number" placeholder="Ręcznie (mm)" value={manualQuantity}
+              <input
+                type="number"
+                placeholder="Ręcznie (mm)"
+                value={manualQuantity}
                 onChange={(e)=>setManualQuantity(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+                className="border rounded-xl p-3"
               />
 
-              <input type="number" placeholder="Punkty" value={points}
+              <input
+                type="number"
+                placeholder="Punkty"
+                value={points}
                 onChange={(e)=>setPoints(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+                className="border rounded-xl p-3"
               />
 
-              <input type="number" placeholder="Ilość km dojazdu" value={km}
+              <input
+                type="number"
+                placeholder="Ilość km dojazdu"
+                value={km}
                 onChange={(e)=>setKm(e.target.value)}
-                className={`border rounded-xl p-3 ${
-                  darkMode
-                    ? "border-white/20 bg-black text-white"
-                    : "border-black/20 bg-white text-black"
-                }`}
+                className="border rounded-xl p-3"
               />
 
             </div>
 
             <div className="font-bold text-lg">
-              Suma: {formatCurrency(total)} zł
+              Suma: {formatCurrency(total)}
             </div>
 
             <button
               onClick={saveOrder}
               className="rounded-xl border border-green-600 bg-green-700 hover:bg-green-600 px-4 py-2"
             >
-              {editingId ? "Zapisz zmiany" : "Zapisz zlecenie"}
+              {editingId
+                ? "Zapisz zmiany"
+                : "Zapisz zlecenie"}
             </button>
 
           </div>

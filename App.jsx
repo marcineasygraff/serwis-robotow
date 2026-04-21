@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-// 🔐 USERS (z rolami)
-const USERS = [
-  { login: "admin", password: "1234", role: "admin" },
-];
+// 🔐 USERS
+const USERS = [{ login: "admin", password: "1234", role: "admin" }];
 
-// 📍 BAZA
+// 📍 BAZA SERWISU (STAŁA)
 const BASE_LOCATION = {
   lat: 49.8547,
-  lon: 19.3386,
+  lon: 19.3386, // Andrychów, Lenartowicza 64
 };
 
 // 💰 CENNIK
@@ -31,9 +29,11 @@ export default function SerwisRobotowApp() {
       (u) => u.login === login && u.password === password
     );
 
-    if (!found) return alert("Błędne dane");
+    if (!found) return alert("Błędne dane logowania");
     setUser(found);
   };
+
+  const isAdmin = user?.role === "admin";
 
   // =========================
   // 📋 STATE
@@ -67,12 +67,96 @@ export default function SerwisRobotowApp() {
     }
   };
 
+  // =========================
+  // 🔄 STATUS CHANGE
+  // =========================
   const changeStatus = (id, status) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status } : o))
     );
   };
 
+  // =========================
+  // 🌍 GEO
+  // =========================
+  const geocodeAddress = async (addr) => {
+    if (!addr) return null;
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          addr
+        )}`
+      );
+
+      const data = await res.json();
+      if (!data?.length) return null;
+
+      return {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const getDistanceKm = (a, b) => {
+    const R = 6371;
+
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+
+    const x =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((a.lat * Math.PI) / 180) *
+        Math.cos((b.lat * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+    return 2 * R * Math.asin(Math.sqrt(x));
+  };
+
+  // =========================
+  // 🚗 AUTO KM (ANDRYCHÓW BASE)
+  // =========================
+  useEffect(() => {
+    if (!address) {
+      setKm("");
+      return;
+    }
+
+    const t = setTimeout(async () => {
+      const geo = await geocodeAddress(address);
+      if (!geo) return;
+
+      const distance = getDistanceKm(BASE_LOCATION, geo);
+      setKm(distance.toFixed(1));
+    }, 700);
+
+    return () => clearTimeout(t);
+  }, [address]);
+
+  // =========================
+  // 💾 LOAD / SAVE
+  // =========================
+  useEffect(() => {
+    const saved = localStorage.getItem("orders");
+    if (saved) {
+      try {
+        setOrders(JSON.parse(saved));
+      } catch {
+        setOrders([]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("orders", JSON.stringify(orders));
+  }, [orders]);
+
+  // =========================
+  // 🔢 HELPERS
+  // =========================
   const num = (v) => Number(v) || 0;
 
   const formatCurrency = (v) =>
@@ -83,6 +167,8 @@ export default function SerwisRobotowApp() {
 
   const generateId = () =>
     crypto?.randomUUID?.() || String(Date.now() + Math.random());
+
+  const validatePhone = (p) => /^[0-9]{9}$/.test(p);
 
   // =========================
   // 💰 TOTAL
@@ -103,7 +189,7 @@ export default function SerwisRobotowApp() {
   }, [machineQuantity, manualQuantity, points, km]);
 
   // =========================
-  // 💾 SAVE ORDER
+  // 💾 ORDER ACTIONS
   // =========================
   const reset = () => {
     setClientName("");
@@ -117,7 +203,8 @@ export default function SerwisRobotowApp() {
   };
 
   const saveOrder = () => {
-    if (!clientName) return alert("Brak imienia");
+    if (!clientName.trim()) return alert("Brak imienia");
+    if (!validatePhone(phone)) return alert("Zły telefon");
 
     const order = {
       id: editingId || generateId(),
@@ -196,8 +283,6 @@ export default function SerwisRobotowApp() {
     );
   }
 
-  const isAdmin = user?.role === "admin";
-
   // =========================
   // 🎨 UI
   // =========================
@@ -239,7 +324,15 @@ export default function SerwisRobotowApp() {
               <input className="border p-2" type="number" placeholder="Maszynowo" value={machineQuantity} onChange={(e) => setMachineQuantity(e.target.value)} />
               <input className="border p-2" type="number" placeholder="Ręcznie" value={manualQuantity} onChange={(e) => setManualQuantity(e.target.value)} />
               <input className="border p-2" type="number" placeholder="Punkty" value={points} onChange={(e) => setPoints(e.target.value)} />
-              <input className="border p-2" type="number" placeholder="Km" value={km} onChange={(e) => setKm(e.target.value)} />
+
+              {/* KM READONLY */}
+              <input
+                className="border p-2 bg-gray-100"
+                type="number"
+                value={km}
+                readOnly
+                placeholder="Km (auto)"
+              />
             </div>
 
             <div className="font-bold">Suma: {formatCurrency(total)}</div>
@@ -258,7 +351,6 @@ export default function SerwisRobotowApp() {
 
                 <div className="font-bold">{o.clientName}</div>
 
-                {/* STATUS COLOR */}
                 <span className={`px-2 py-1 rounded text-sm ${statusColor(o.status)}`}>
                   {o.status}
                 </span>
@@ -280,49 +372,16 @@ export default function SerwisRobotowApp() {
           </div>
         )}
 
-        {/* ADMIN PANEL */}
+        {/* ADMIN */}
         {activeTab === "admin" && isAdmin && (
-          <div className="border p-4 rounded-xl space-y-3">
-            <h2 className="text-xl font-bold">Panel Admina</h2>
+          <div className="border p-4 rounded-xl">
+            <h2 className="text-xl font-bold mb-3">Panel Admina</h2>
 
-            <div>Liczba zleceń: {orders.length}</div>
+            <div>Łącznie zleceń: {orders.length}</div>
 
-            <div>Wartość wszystkich: {formatCurrency(orders.reduce((a,b)=>a+b.total,0))}</div>
-
-            <div className="space-y-2">
-              {orders.map((o) => (
-                <div key={o.id} className="border p-2 rounded">
-                  <div className="font-bold">{o.clientName}</div>
-
-                  <span className={`px-2 py-1 rounded text-sm ${statusColor(o.status)}`}>
-                    {o.status}
-                  </span>
-
-                  <div className="flex gap-2 mt-2">
-                    <button onClick={() => changeStatus(o.id, "Nowe")}>Nowe</button>
-                    <button onClick={() => changeStatus(o.id, "W trakcie")}>W trakcie</button>
-                    <button onClick={() => changeStatus(o.id, "Zakończone")}>Zakończone</button>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-2">
+              Suma: {formatCurrency(orders.reduce((a, b) => a + b.total, 0))}
             </div>
-          </div>
-        )}
-
-        {/* HISTORY */}
-        {activeTab === "history" && (
-          <div className="space-y-3">
-            {orders.map((o) => (
-              <div key={o.id} className="border p-3 rounded-xl">
-                <div className="font-bold">{o.clientName}</div>
-
-                <span className={`px-2 py-1 rounded text-sm ${statusColor(o.status)}`}>
-                  {o.status}
-                </span>
-
-                <div className="font-bold mt-2">{formatCurrency(o.total)}</div>
-              </div>
-            ))}
           </div>
         )}
 

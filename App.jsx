@@ -1,66 +1,38 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+// 🔐 USERS (z rolami)
+const USERS = [
+  { login: "admin", password: "1234", role: "admin" },
+];
+
+// 📍 BAZA
+const BASE_LOCATION = {
+  lat: 49.8547,
+  lon: 19.3386,
+};
+
+// 💰 CENNIK
+const PRICE_MACHINE = 7;
+const PRICE_MANUAL = 10;
+const PRICE_POINT = 50;
+const PRICE_KM = 3;
+const FIXED_TRAVEL = 150;
+
 export default function SerwisRobotowApp() {
   // =========================
-  // 🌙 DARK MODE (MANUAL)
+  // 🔐 LOGIN
   // =========================
+  const [user, setUser] = useState(null);
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
 
-  const getSystemDark = () =>
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const handleLogin = () => {
+    const found = USERS.find(
+      (u) => u.login === login && u.password === password
+    );
 
-  const [darkMode, setDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  // INIT: localStorage → system
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const saved = localStorage.getItem("darkMode");
-
-    if (saved === null) {
-      setDarkMode(getSystemDark());
-    } else {
-      setDarkMode(saved === "true");
-    }
-
-    setMounted(true);
-  }, []);
-
-  // APPLY theme
-  useEffect(() => {
-    if (!mounted) return;
-
-    const root = document.documentElement;
-
-    if (darkMode) root.classList.add("dark");
-    else root.classList.remove("dark");
-
-    localStorage.setItem("darkMode", darkMode);
-  }, [darkMode, mounted]);
-
-  // LIVE system change (only if no manual override)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleChange = (e) => {
-      const saved = localStorage.getItem("darkMode");
-
-      if (saved === null) {
-        setDarkMode(e.matches);
-      }
-    };
-
-    media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
-  }, []);
-
-  const toggleDark = () => {
-    const newValue = !darkMode;
-    setDarkMode(newValue);
-    localStorage.setItem("darkMode", String(newValue));
+    if (!found) return alert("Błędne dane");
+    setUser(found);
   };
 
   // =========================
@@ -69,84 +41,48 @@ export default function SerwisRobotowApp() {
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
+
   const [machineQuantity, setMachineQuantity] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
   const [points, setPoints] = useState("");
   const [km, setKm] = useState("");
 
-  const [activeTab, setActiveTab] = useState("calculator");
   const [orders, setOrders] = useState([]);
+  const [activeTab, setActiveTab] = useState("calculator");
   const [editingId, setEditingId] = useState(null);
-  const [search, setSearch] = useState("");
 
   // =========================
-  // 💰 CENNIK
+  // 🎨 STATUS COLORS
   // =========================
-  const PRICE_MACHINE = 7;
-  const PRICE_MANUAL = 10;
-  const PRICE_POINT = 50;
-  const PRICE_KM = 3;
-  const FIXED_TRAVEL = 150;
+  const statusColor = (status) => {
+    switch (status) {
+      case "Nowe":
+        return "bg-red-200 text-red-800";
+      case "W trakcie":
+        return "bg-yellow-200 text-yellow-800";
+      case "Zakończone":
+        return "bg-green-200 text-green-800";
+      default:
+        return "bg-gray-200";
+    }
+  };
+
+  const changeStatus = (id, status) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status } : o))
+    );
+  };
 
   const num = (v) => Number(v) || 0;
 
-  const formatCurrency = (value) =>
+  const formatCurrency = (v) =>
     new Intl.NumberFormat("pl-PL", {
       style: "currency",
       currency: "PLN",
-    }).format(value);
+    }).format(v);
 
-  const generateId = () => {
-    if (crypto?.randomUUID) return crypto.randomUUID();
-    return String(Date.now()) + Math.random().toString(16).slice(2);
-  };
-
-  const validatePhone = (phone) => /^[0-9]{9}$/.test(phone);
-
-  const inputClass = () =>
-    `border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-      darkMode
-        ? "border-white/20 bg-black text-white"
-        : "border-black/20 bg-white text-black"
-    }`;
-
-  const tabClass = (tab) =>
-    `rounded-xl border px-4 py-2 ${
-      activeTab === tab
-        ? "bg-blue-600 text-white"
-        : darkMode
-        ? "border-white/20"
-        : "border-black/20"
-    }`;
-
-  // =========================
-  // 💾 LOAD
-  // =========================
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const saved = localStorage.getItem("serwis-robotow-orders");
-
-    if (saved) {
-      try {
-        setOrders(JSON.parse(saved));
-      } catch {
-        setOrders([]);
-      }
-    }
-  }, []);
-
-  // =========================
-  // 💾 SAVE
-  // =========================
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    localStorage.setItem(
-      "serwis-robotow-orders",
-      JSON.stringify(orders)
-    );
-  }, [orders]);
+  const generateId = () =>
+    crypto?.randomUUID?.() || String(Date.now() + Math.random());
 
   // =========================
   // 💰 TOTAL
@@ -155,30 +91,21 @@ export default function SerwisRobotowApp() {
     const mq = num(machineQuantity);
     const manq = num(manualQuantity);
     const p = num(points);
-    const travelKm = num(km);
+    const kmVal = num(km);
 
     const base =
       mq * PRICE_MACHINE +
       manq * PRICE_MANUAL +
       p * PRICE_POINT +
-      travelKm * PRICE_KM;
+      kmVal * PRICE_KM;
 
-    const hasOrder = mq + manq + p + travelKm > 0;
-
-    return base + (hasOrder ? FIXED_TRAVEL : 0);
+    return base + (mq + manq + p + kmVal > 0 ? FIXED_TRAVEL : 0);
   }, [machineQuantity, manualQuantity, points, km]);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((o) =>
-      (o.clientName || "").toLowerCase().includes(search.toLowerCase())
-    );
-  }, [orders, search]);
-
-  const totalSum = useMemo(() => {
-    return filteredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-  }, [filteredOrders]);
-
-  const resetForm = () => {
+  // =========================
+  // 💾 SAVE ORDER
+  // =========================
+  const reset = () => {
     setClientName("");
     setAddress("");
     setPhone("");
@@ -190,8 +117,7 @@ export default function SerwisRobotowApp() {
   };
 
   const saveOrder = () => {
-    if (!clientName.trim()) return alert("Podaj imię klienta");
-    if (!validatePhone(phone)) return alert("Niepoprawny numer telefonu");
+    if (!clientName) return alert("Brak imienia");
 
     const order = {
       id: editingId || generateId(),
@@ -203,24 +129,23 @@ export default function SerwisRobotowApp() {
       points: num(points),
       km: num(km),
       total,
-      date: new Date().toLocaleDateString("pl-PL"),
+      status: "Nowe",
+      createdAt: new Date().toISOString(),
     };
 
     if (editingId) {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === editingId ? order : o))
-      );
+      setOrders((p) => p.map((o) => (o.id === editingId ? order : o)));
     } else {
-      setOrders((prev) => [order, ...prev]);
+      setOrders((p) => [order, ...p]);
     }
 
-    resetForm();
+    reset();
     setActiveTab("history");
   };
 
   const deleteOrder = (id) => {
-    if (confirm("Usunąć zlecenie?")) {
-      setOrders((prev) => prev.filter((o) => o.id !== id));
+    if (confirm("Usunąć?")) {
+      setOrders((p) => p.filter((o) => o.id !== id));
     }
   };
 
@@ -237,113 +162,167 @@ export default function SerwisRobotowApp() {
   };
 
   // =========================
-  // ⛔ FIX FLASH
+  // 🔐 LOGIN SCREEN
   // =========================
-  if (!mounted) return null;
+  if (!user) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="border p-6 rounded-xl w-80 space-y-3">
+          <h1 className="text-xl font-bold">Logowanie</h1>
+
+          <input
+            className="border p-2 w-full"
+            placeholder="login"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
+          />
+
+          <input
+            className="border p-2 w-full"
+            type="password"
+            placeholder="hasło"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button
+            onClick={handleLogin}
+            className="bg-blue-600 text-white w-full py-2 rounded-xl"
+          >
+            Zaloguj
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isAdmin = user?.role === "admin";
 
   // =========================
   // 🎨 UI
   // =========================
   return (
-    <div
-      className={`min-h-screen p-6 transition-colors duration-300 ${
-        darkMode ? "bg-black text-white" : "bg-white text-black"
-      }`}
-    >
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen p-4">
+      <div className="max-w-5xl mx-auto space-y-5">
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Serwis Robotów</h1>
-
-          <button
-            onClick={toggleDark}
-            className={`rounded-xl border px-4 py-2 text-sm ${
-              darkMode
-                ? "border-white/20 bg-black"
-                : "border-black/20 bg-white"
-            }`}
-          >
-            {darkMode ? "☀️ Jasny" : "🌙 Ciemny"}
-          </button>
-        </div>
+        <h1 className="text-3xl font-bold">Serwis Robotów</h1>
 
         {/* TABS */}
-        <div className="flex gap-3">
-          <button onClick={() => setActiveTab("calculator")} className={tabClass("calculator")}>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setActiveTab("calculator")} className="border px-3 py-2 rounded">
             Kalkulator
           </button>
-          <button onClick={() => setActiveTab("history")} className={tabClass("history")}>
+
+          <button onClick={() => setActiveTab("history")} className="border px-3 py-2 rounded">
             Historia
           </button>
+
+          <button onClick={() => setActiveTab("zlecenia")} className="border px-3 py-2 rounded">
+            Zlecenia
+          </button>
+
+          {isAdmin && (
+            <button onClick={() => setActiveTab("admin")} className="border px-3 py-2 rounded bg-black text-white">
+              Admin
+            </button>
+          )}
         </div>
 
         {/* CALCULATOR */}
         {activeTab === "calculator" && (
-          <div className={`border p-6 rounded-2xl space-y-4 ${
-            darkMode ? "border-white/20" : "border-black/20"
-          }`}>
+          <div className="border p-4 rounded-xl space-y-3">
+            <input className="border p-2 w-full" placeholder="Imię" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+            <input className="border p-2 w-full" placeholder="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <input className="border p-2 w-full" placeholder="Adres" value={address} onChange={(e) => setAddress(e.target.value)} />
 
-            <h2 className="text-xl font-semibold">
-              {editingId ? "Edytuj zlecenie" : "Nowe zlecenie"}
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <input className={inputClass()} placeholder="Imię klienta" value={clientName} onChange={(e) => setClientName(e.target.value)} />
-              <input className={inputClass()} placeholder="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <input className={inputClass()} placeholder="Adres" value={address} onChange={(e) => setAddress(e.target.value)} />
-              <input className={inputClass()} type="number" placeholder="Maszynowo" value={machineQuantity} onChange={(e) => setMachineQuantity(e.target.value)} />
-              <input className={inputClass()} type="number" placeholder="Ręcznie" value={manualQuantity} onChange={(e) => setManualQuantity(e.target.value)} />
-              <input className={inputClass()} type="number" placeholder="Punkty" value={points} onChange={(e) => setPoints(e.target.value)} />
-              <input className={inputClass()} type="number" placeholder="Km" value={km} onChange={(e) => setKm(e.target.value)} />
+            <div className="grid grid-cols-2 gap-2">
+              <input className="border p-2" type="number" placeholder="Maszynowo" value={machineQuantity} onChange={(e) => setMachineQuantity(e.target.value)} />
+              <input className="border p-2" type="number" placeholder="Ręcznie" value={manualQuantity} onChange={(e) => setManualQuantity(e.target.value)} />
+              <input className="border p-2" type="number" placeholder="Punkty" value={points} onChange={(e) => setPoints(e.target.value)} />
+              <input className="border p-2" type="number" placeholder="Km" value={km} onChange={(e) => setKm(e.target.value)} />
             </div>
 
-            <div className="text-lg font-bold">
-              Suma: {formatCurrency(total)}
-            </div>
+            <div className="font-bold">Suma: {formatCurrency(total)}</div>
 
-            <button onClick={saveOrder} className="px-4 py-2 rounded-xl bg-green-700 text-white">
+            <button onClick={saveOrder} className="bg-green-600 text-white px-4 py-2 rounded-xl">
               Zapisz
             </button>
           </div>
         )}
 
+        {/* ZLECENIA */}
+        {activeTab === "zlecenia" && (
+          <div className="space-y-3">
+            {orders.map((o) => (
+              <div key={o.id} className="border p-3 rounded-xl">
+
+                <div className="font-bold">{o.clientName}</div>
+
+                {/* STATUS COLOR */}
+                <span className={`px-2 py-1 rounded text-sm ${statusColor(o.status)}`}>
+                  {o.status}
+                </span>
+
+                <div className="font-bold mt-2">{formatCurrency(o.total)}</div>
+
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => changeStatus(o.id, "Nowe")}>Nowe</button>
+                  <button onClick={() => changeStatus(o.id, "W trakcie")}>W trakcie</button>
+                  <button onClick={() => changeStatus(o.id, "Zakończone")}>Zakończone</button>
+                </div>
+
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => editOrder(o)}>Edytuj</button>
+                  <button onClick={() => deleteOrder(o.id)}>Usuń</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ADMIN PANEL */}
+        {activeTab === "admin" && isAdmin && (
+          <div className="border p-4 rounded-xl space-y-3">
+            <h2 className="text-xl font-bold">Panel Admina</h2>
+
+            <div>Liczba zleceń: {orders.length}</div>
+
+            <div>Wartość wszystkich: {formatCurrency(orders.reduce((a,b)=>a+b.total,0))}</div>
+
+            <div className="space-y-2">
+              {orders.map((o) => (
+                <div key={o.id} className="border p-2 rounded">
+                  <div className="font-bold">{o.clientName}</div>
+
+                  <span className={`px-2 py-1 rounded text-sm ${statusColor(o.status)}`}>
+                    {o.status}
+                  </span>
+
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => changeStatus(o.id, "Nowe")}>Nowe</button>
+                    <button onClick={() => changeStatus(o.id, "W trakcie")}>W trakcie</button>
+                    <button onClick={() => changeStatus(o.id, "Zakończone")}>Zakończone</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* HISTORY */}
         {activeTab === "history" && (
-          <div className="border p-6 rounded-2xl">
-            <h2 className="text-xl font-semibold mb-4">Historia</h2>
+          <div className="space-y-3">
+            {orders.map((o) => (
+              <div key={o.id} className="border p-3 rounded-xl">
+                <div className="font-bold">{o.clientName}</div>
 
-            <div className="font-bold mb-4">
-              Suma: {formatCurrency(totalSum)}
-            </div>
+                <span className={`px-2 py-1 rounded text-sm ${statusColor(o.status)}`}>
+                  {o.status}
+                </span>
 
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th>Klient</th>
-                  <th>Usługa</th>
-                  <th>Suma</th>
-                  <th>Akcje</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredOrders.map((o) => (
-                  <tr key={o.id} className="border-b">
-                    <td className="p-2">{o.clientName}</td>
-                    <td className="p-2 text-xs opacity-80">
-                      {o.machineQuantity} / {o.manualQuantity} / {o.points} / {o.km} km
-                    </td>
-                    <td className="p-2 font-bold">{formatCurrency(o.total)}</td>
-                    <td className="p-2 space-x-2">
-                      <button onClick={() => editOrder(o)}>Edytuj</button>
-                      <button onClick={() => deleteOrder(o.id)}>Usuń</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
+                <div className="font-bold mt-2">{formatCurrency(o.total)}</div>
+              </div>
+            ))}
           </div>
         )}
 

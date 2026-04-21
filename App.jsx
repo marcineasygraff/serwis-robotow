@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-// 🔐 USERS
+// 🔐 UŻYTKOWNICY
 const USERS = [{ login: "admin", password: "1234", role: "admin" }];
 
-// 📍 BAZA (STAŁA)
+// 📍 BAZA FIRMY
 const BASE = {
   lat: 49.8547,
   lon: 19.3386,
@@ -18,78 +18,79 @@ const STATUS_STYLE = {
 };
 
 export default function App() {
-  // ================= LOGIN =================
+  // ================= LOGOWANIE =================
   const [user, setUser] = useState(null);
   const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
+  const [haslo, setHaslo] = useState("");
 
-  const handleLogin = () => {
+  const zaloguj = () => {
     const u = USERS.find(
-      (x) => x.login === login && x.password === password
+      (x) => x.login === login && x.password === haslo
     );
-    if (!u) return alert("Błędne dane");
+
+    if (!u) return alert("Błędny login lub hasło");
     setUser(u);
   };
 
-  const isAdmin = user?.role === "admin";
+  const czyAdmin = user?.role === "admin";
 
   // ================= CENY (ADMIN) =================
-  const [price, setPrice] = useState({
-    machine: 7,
-    manual: 10,
-    point: 50,
+  const [ceny, setCeny] = useState({
+    maszynowa: 7,
+    reczna: 10,
+    punkty: 50,
     km: 3,
-    travel: 150,
+    wyjazd: 150,
   });
 
-  // 💾 ceny zapis
+  // 💾 zapis cen
   useEffect(() => {
-    const saved = localStorage.getItem("prices");
-    if (saved) setPrice(JSON.parse(saved));
+    const zapis = localStorage.getItem("ceny");
+    if (zapis) setCeny(JSON.parse(zapis));
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("prices", JSON.stringify(price));
-  }, [price]);
+    localStorage.setItem("ceny", JSON.stringify(ceny));
+  }, [ceny]);
 
-  // ================= FORM =================
-  const [form, setForm] = useState({
-    clientName: "",
-    address: "",
-    phone: "",
-    machine: "",
-    manual: "",
-    points: "",
+  // ================= FORMULARZ =================
+  const [formularz, setFormularz] = useState({
+    klient: "",
+    adres: "",
+    telefon: "",
+    maszynowa: "",
+    reczna: "",
+    punkty: "",
   });
 
   const [km, setKm] = useState("");
   const [eta, setEta] = useState("");
-  const [orders, setOrders] = useState([]);
-  const [tab, setTab] = useState("calculator");
-  const [editId, setEditId] = useState(null);
+  const [zlecenia, setZlecenia] = useState([]);
+  const [zakladka, setZakladka] = useState("kalkulator");
+  const [edycjaId, setEdycjaId] = useState(null);
 
-  const num = (v) => Number(v) || 0;
+  const licz = (v) => Number(v) || 0;
 
-  // ================= GEO =================
-  const geocode = async (addr) => {
+  // ================= GEOLOKALIZACJA =================
+  const pobierzGeo = async (adres) => {
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adres)}`
       );
-      const data = await res.json();
-      if (!data?.length) return null;
+      const d = await r.json();
+      if (!d?.length) return null;
 
       return {
-        lat: +data[0].lat,
-        lon: +data[0].lon,
+        lat: +d[0].lat,
+        lon: +d[0].lon,
       };
     } catch {
       return null;
     }
   };
 
-  // 📍 KM (Haversine)
-  const getDistanceKm = (a, b) => {
+  // 📍 KM
+  const policzKm = (a, b) => {
     const R = 6371;
 
     const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -100,23 +101,24 @@ export default function App() {
 
     const x =
       Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1) * Math.cos(lat2) *
-      Math.sin(dLon / 2) ** 2;
+      Math.cos(lat1) *
+        Math.cos(lat2) *
+        Math.sin(dLon / 2) ** 2;
 
     return 2 * R * Math.asin(Math.sqrt(x));
   };
 
-  // 🕒 ETA (OSRM)
-  const getEta = async (a, b) => {
+  // 🕒 ETA
+  const policzETA = async (a, b) => {
     try {
-      const res = await fetch(
+      const r = await fetch(
         `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`
       );
+      const d = await r.json();
 
-      const data = await res.json();
-      if (!data?.routes?.length) return null;
-
-      return Math.round(data.routes[0].duration / 60);
+      return d?.routes?.length
+        ? Math.round(d.routes[0].duration / 60)
+        : null;
     } catch {
       return null;
     }
@@ -124,96 +126,90 @@ export default function App() {
 
   // ================= AUTO KM + ETA =================
   useEffect(() => {
-    if (!form.address) {
+    if (!formularz.adres) {
       setKm("");
       setEta("");
       return;
     }
 
-    const t = setTimeout(async () => {
-      const geo = await geocode(form.address);
+    const timer = setTimeout(async () => {
+      const geo = await pobierzGeo(formularz.adres);
       if (!geo) return;
 
-      // 📍 KM zawsze: Andrychów → klient
-      const kmValue = getDistanceKm(BASE, geo);
-      setKm(kmValue.toFixed(1));
+      const kmWartosc = policzKm(BASE, geo);
+      setKm(kmWartosc.toFixed(1));
 
-      // 🕒 ETA
-      const etaValue = await getEta(BASE, geo);
-      if (etaValue !== null) setEta(etaValue);
+      const etaWartosc = await policzETA(BASE, geo);
+      if (etaWartosc !== null) setEta(etaWartosc);
     }, 600);
 
-    return () => clearTimeout(t);
-  }, [form.address]);
+    return () => clearTimeout(timer);
+  }, [formularz.adres]);
 
-  // ================= TOTAL =================
-  const total = useMemo(() => {
-    const base =
-      num(form.machine) * price.machine +
-      num(form.manual) * price.manual +
-      num(form.points) * price.point +
-      num(km) * price.km;
+  // ================= SUMA =================
+  const suma = useMemo(() => {
+    const baza =
+      licz(formularz.maszynowa) * ceny.maszynowa +
+      licz(formularz.reczna) * ceny.reczna +
+      licz(formularz.punkty) * ceny.punkty +
+      licz(km) * ceny.km;
 
-    return base + (base > 0 ? price.travel : 0);
-  }, [form, km, price]);
-
-  const format = (v) =>
-    new Intl.NumberFormat("pl-PL", {
-      style: "currency",
-      currency: "PLN",
-    }).format(v);
+    return baza + (baza > 0 ? ceny.wyjazd : 0);
+  }, [formularz, km, ceny]);
 
   const id = () => crypto?.randomUUID?.() || String(Date.now());
 
-  // ================= SAVE =================
-  const save = () => {
-    if (!form.clientName) return alert("Brak imienia");
+  // ================= ZAPIS =================
+  const zapisz = () => {
+    if (!formularz.klient) return alert("Podaj klienta");
 
-    const order = {
-      id: editId || id(),
-      ...form,
+    const nowe = {
+      id: edycjaId || id(),
+      ...formularz,
       km,
       eta,
-      total,
+      suma,
       status: "Nowe",
-      createdAt: new Date().toISOString(),
+      data: new Date().toISOString(),
     };
 
-    setOrders((p) =>
-      editId ? p.map((o) => (o.id === editId ? order : o)) : [order, ...p]
+    setZlecenia((p) =>
+      edycjaId ? p.map((o) => (o.id === edycjaId ? nowe : o)) : [nowe, ...p]
     );
 
-    setForm({
-      clientName: "",
-      address: "",
-      phone: "",
-      machine: "",
-      manual: "",
-      points: "",
+    setFormularz({
+      klient: "",
+      adres: "",
+      telefon: "",
+      maszynowa: "",
+      reczna: "",
+      punkty: "",
     });
 
     setKm("");
     setEta("");
-    setEditId(null);
-    setTab("zlecenia");
+    setEdycjaId(null);
+    setZakladka("zlecenia");
   };
 
-  const changeStatus = (id, status) => {
-    setOrders((p) =>
+  const zmienStatus = (id, status) => {
+    setZlecenia((p) =>
       p.map((o) => (o.id === id ? { ...o, status } : o))
     );
   };
 
-  const del = (id) => {
-    if (confirm("Usunąć?")) setOrders((p) => p.filter((o) => o.id !== id));
+  const usun = (id) => {
+    if (confirm("Usunąć zlecenie?")) {
+      setZlecenia((p) => p.filter((o) => o.id !== id));
+    }
   };
 
-  const edit = (o) => {
-    setForm(o);
+  const edytuj = (o) => {
+    setFormularz(o);
     setKm(o.km);
     setEta(o.eta);
-    setEditId(o.id);
-    setTab("calculator");
+    setEdycjaId(o.id);
+    setZakladka("kalkulator");
   };
 
   // ================= LOGIN =================
@@ -221,14 +217,25 @@ export default function App() {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="border p-6 w-80 space-y-3">
-          <input className="border p-2 w-full" placeholder="login"
-            value={login} onChange={(e) => setLogin(e.target.value)} />
+          <input
+            className="border p-2 w-full"
+            placeholder="Login"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
+          />
 
-          <input className="border p-2 w-full" type="password"
-            placeholder="hasło" value={password}
-            onChange={(e) => setPassword(e.target.value)} />
+          <input
+            className="border p-2 w-full"
+            type="password"
+            placeholder="Hasło"
+            value={haslo}
+            onChange={(e) => setHaslo(e.target.value)}
+          />
 
-          <button onClick={handleLogin} className="bg-blue-600 text-white w-full p-2">
+          <button
+            onClick={zaloguj}
+            className="bg-blue-600 text-white w-full p-2"
+          >
             Zaloguj
           </button>
         </div>
@@ -236,47 +243,65 @@ export default function App() {
     );
   }
 
-  // ================= UI =================
+  // ================= INTERFEJS =================
   return (
     <div className="p-4 max-w-5xl mx-auto">
 
       <h1 className="text-3xl font-bold">Serwis Robotów</h1>
 
-      {/* TABS */}
+      {/* MENU */}
       <div className="flex gap-2 my-4">
-        <button onClick={() => setTab("calculator")}>Kalkulator</button>
-        <button onClick={() => setTab("zlecenia")}>Zlecenia</button>
-        {isAdmin && <button onClick={() => setTab("admin")}>Admin</button>}
+        <button onClick={() => setZakladka("kalkulator")}>Kalkulator</button>
+        <button onClick={() => setZakladka("zlecenia")}>Zlecenia</button>
+        {czyAdmin && <button onClick={() => setZakladka("admin")}>Admin</button>}
       </div>
 
-      {/* CALCULATOR */}
-      {tab === "calculator" && (
+      {/* KALKULATOR */}
+      {zakladka === "kalkulator" && (
         <div className="border p-4 space-y-2">
 
-          <input placeholder="Imię"
-            value={form.clientName}
-            onChange={(e) => setForm({ ...form, clientName: e.target.value })} />
+          <input placeholder="Klient"
+            value={formularz.klient}
+            onChange={(e) =>
+              setFormularz({ ...formularz, klient: e.target.value })
+            }
+          />
 
           <input placeholder="Adres"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            value={formularz.adres}
+            onChange={(e) =>
+              setFormularz({ ...formularz, adres: e.target.value })
+            }
+          />
 
           <input placeholder="Telefon"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            value={formularz.telefon}
+            onChange={(e) =>
+              setFormularz({ ...formularz, telefon: e.target.value })
+            }
+          />
 
           <div className="grid grid-cols-2 gap-2">
-            <input placeholder="Maszyny"
-              value={form.machine}
-              onChange={(e) => setForm({ ...form, machine: e.target.value })} />
+            <input placeholder="Maszynowa"
+              value={formularz.maszynowa}
+              onChange={(e) =>
+                setFormularz({ ...formularz, maszynowa: e.target.value })
+              }
+            />
 
-            <input placeholder="Ręczne"
-              value={form.manual}
-              onChange={(e) => setForm({ ...form, manual: e.target.value })} />
+            <input placeholder="Ręczna"
+              value={formularz.reczna}
+              onChange={(e) =>
+                setFormularz({ ...formularz, reczna: e.target.value })
+              }
+            />
 
             <input placeholder="Punkty"
-              value={form.points}
-              onChange={(e) => setForm({ ...form, points: e.target.value })} />
+              value={formularz.punkty}
+              onChange={(e) =>
+                setFormularz({ ...formularz, punkty: e.target.value })
+              }
+            />
 
             <input value={km} readOnly className="bg-gray-100" />
           </div>
@@ -284,38 +309,38 @@ export default function App() {
           <div>📍 {BASE.name} → klient</div>
           <div>🚗 {km} km | 🕒 {eta} min</div>
 
-          <div className="font-bold">{format(total)}</div>
+          <div className="font-bold">{suma.toFixed(2)} zł</div>
 
-          <button onClick={save} className="bg-green-600 text-white p-2">
+          <button onClick={zapisz} className="bg-green-600 text-white p-2">
             Zapisz
           </button>
         </div>
       )}
 
       {/* ZLECENIA */}
-      {tab === "zlecenia" && (
+      {zakladka === "zlecenia" && (
         <div className="space-y-3">
-          {orders.map((o) => (
+          {zlecenia.map((o) => (
             <div key={o.id} className="border p-3">
 
-              <div className="font-bold">{o.clientName}</div>
+              <div className="font-bold">{o.klient}</div>
 
               <span className={`px-2 py-1 ${STATUS_STYLE[o.status]}`}>
                 {o.status}
               </span>
 
               <div>🚗 {o.km} km | 🕒 {o.eta} min</div>
-              <div>{format(o.total)}</div>
+              <div>{o.suma} zł</div>
 
               <div className="flex gap-2">
-                <button onClick={() => changeStatus(o.id, "Nowe")}>Nowe</button>
-                <button onClick={() => changeStatus(o.id, "W trakcie")}>W trakcie</button>
-                <button onClick={() => changeStatus(o.id, "Zakończone")}>Zakończone</button>
+                <button onClick={() => zmienStatus(o.id, "Nowe")}>Nowe</button>
+                <button onClick={() => zmienStatus(o.id, "W trakcie")}>W trakcie</button>
+                <button onClick={() => zmienStatus(o.id, "Zakończone")}>Zakończone</button>
               </div>
 
               <div className="flex gap-2">
-                <button onClick={() => edit(o)}>Edytuj</button>
-                <button onClick={() => del(o.id)}>Usuń</button>
+                <button onClick={() => edytuj(o)}>Edytuj</button>
+                <button onClick={() => usun(o.id)}>Usuń</button>
               </div>
 
             </div>
@@ -324,21 +349,29 @@ export default function App() {
       )}
 
       {/* ADMIN */}
-      {tab === "admin" && isAdmin && (
-        <div className="border p-4 space-y-2">
+      {zakladka === "admin" && czyAdmin && (
+        <div className="border p-4 space-y-3">
 
-          <h2 className="font-bold">Panel cen</h2>
+          <h2 className="font-bold text-xl">💰 Panel administracyjny cen</h2>
 
-          {Object.keys(price).map((k) => (
-            <input
-              key={k}
-              className="border p-2 w-full"
-              value={price[k]}
-              onChange={(e) =>
-                setPrice({ ...price, [k]: Number(e.target.value) })
-              }
-              placeholder={k}
-            />
+          <p className="text-sm opacity-60">
+            Tutaj zmieniasz wszystkie stawki używane w kalkulatorze
+          </p>
+
+          {Object.keys(ceny).map((k) => (
+            <div key={k}>
+              <label className="font-semibold">
+                {k}
+              </label>
+
+              <input
+                className="border p-2 w-full"
+                value={ceny[k]}
+                onChange={(e) =>
+                  setCeny({ ...ceny, [k]: Number(e.target.value) })
+                }
+              />
+            </div>
           ))}
 
         </div>

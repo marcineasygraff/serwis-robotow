@@ -18,9 +18,7 @@ const STATUS_STYLE = {
 };
 
 export default function App() {
-
-  // ================= LOGOWANIE =================
-
+  // ================= LOGIN =================
   const [user, setUser] = useState(null);
   const [login, setLogin] = useState("");
   const [haslo, setHaslo] = useState("");
@@ -37,7 +35,6 @@ export default function App() {
   const czyAdmin = user?.role === "admin";
 
   // ================= CENY =================
-
   const [ceny, setCeny] = useState({
     maszynowa: 7,
     reczna: 10,
@@ -55,9 +52,30 @@ export default function App() {
     localStorage.setItem("ceny", JSON.stringify(ceny));
   }, [ceny]);
 
-  // ================= FORMULARZ =================
+  // ================= ZLECENIA + HISTORIA =================
+  const [zlecenia, setZlecenia] = useState([]);
+  const [historia, setHistoria] = useState([]);
 
-  const pustyFormularz = {
+  // 💾 load
+  useEffect(() => {
+    const z = localStorage.getItem("zlecenia");
+    const h = localStorage.getItem("historia");
+
+    if (z) setZlecenia(JSON.parse(z));
+    if (h) setHistoria(JSON.parse(h));
+  }, []);
+
+  // 💾 save
+  useEffect(() => {
+    localStorage.setItem("zlecenia", JSON.stringify(zlecenia));
+  }, [zlecenia]);
+
+  useEffect(() => {
+    localStorage.setItem("historia", JSON.stringify(historia));
+  }, [historia]);
+
+  // ================= FORM =================
+  const pustyForm = {
     klient: "",
     adres: "",
     telefon: "",
@@ -67,50 +85,24 @@ export default function App() {
     punkty: "",
   };
 
-  const [formularz, setFormularz] = useState(pustyFormularz);
-
+  const [formularz, setFormularz] = useState(pustyForm);
   const [km, setKm] = useState("");
   const [eta, setEta] = useState("");
-
-  const [zlecenia, setZlecenia] = useState([]);
-
   const [zakladka, setZakladka] = useState("kalkulator");
-
   const [edycjaId, setEdycjaId] = useState(null);
 
   const licz = (v) => Number(v) || 0;
 
-  // ================= LOCAL STORAGE ZLECEŃ =================
-
-  useEffect(() => {
-    const zapis = localStorage.getItem("zlecenia");
-    if (zapis) {
-      setZlecenia(JSON.parse(zapis));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "zlecenia",
-      JSON.stringify(zlecenia)
-    );
-  }, [zlecenia]);
-
   // ================= GEO =================
-
   const pobierzGeo = async (adres) => {
     try {
       const r = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adres)}`
       );
       const d = await r.json();
-
       if (!d?.length) return null;
 
-      return {
-        lat: +d[0].lat,
-        lon: +d[0].lon,
-      };
+      return { lat: +d[0].lat, lon: +d[0].lon };
     } catch {
       return null;
     }
@@ -118,7 +110,6 @@ export default function App() {
 
   const policzKm = (a, b) => {
     const R = 6371;
-
     const dLat = ((b.lat - a.lat) * Math.PI) / 180;
     const dLon = ((b.lon - a.lon) * Math.PI) / 180;
 
@@ -139,78 +130,59 @@ export default function App() {
       const r = await fetch(
         `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`
       );
-
       const d = await r.json();
 
       return d?.routes?.length
         ? Math.round(d.routes[0].duration / 60)
         : null;
-
     } catch {
       return null;
     }
   };
 
   // ================= AUTO KM =================
-
   useEffect(() => {
-
     if (!formularz.adres) {
       setKm("");
       setEta("");
       return;
     }
 
-    const timer = setTimeout(async () => {
-
+    const t = setTimeout(async () => {
       const geo = await pobierzGeo(formularz.adres);
-
       if (!geo) return;
 
-      const kmWartosc = policzKm(BASE, geo);
+      const kmW = policzKm(BASE, geo);
+      setKm(kmW.toFixed(1));
 
-      setKm(kmWartosc.toFixed(1));
-
-      const etaWartosc =
-        await policzETA(BASE, geo);
-
-      if (etaWartosc !== null)
-        setEta(etaWartosc);
-
+      const etaW = await policzETA(BASE, geo);
+      if (etaW !== null) setEta(etaW);
     }, 600);
 
-    return () => clearTimeout(timer);
-
+    return () => clearTimeout(t);
   }, [formularz.adres]);
 
   // ================= SUMA =================
-
   const suma = useMemo(() => {
-
     const baza =
-      licz(formularz.maszynowa) *
-        ceny.maszynowa +
-      licz(formularz.reczna) *
-        ceny.reczna +
-      licz(formularz.punkty) *
-        ceny.punkty +
-      licz(km) *
-        ceny.km;
+      licz(formularz.maszynowa) * ceny.maszynowa +
+      licz(formularz.reczna) * ceny.reczna +
+      licz(formularz.punkty) * ceny.punkty +
+      licz(km) * ceny.km;
 
     return baza + (baza > 0 ? ceny.wyjazd : 0);
-
   }, [formularz, km, ceny]);
 
   const id = () =>
-    crypto?.randomUUID?.() ||
-    String(Date.now());
+    crypto?.randomUUID?.() || String(Date.now());
 
   // ================= ZAPIS =================
-
   const zapisz = () => {
-
     if (!formularz.klient)
       return alert("Podaj klienta");
+
+    const istniejące =
+      zlecenia.find((o) => o.id === edycjaId);
 
     const nowe = {
       id: edycjaId || id(),
@@ -218,61 +190,58 @@ export default function App() {
       km,
       eta,
       suma,
-      status:
-        zlecenia.find(
-          (o) => o.id === edycjaId
-        )?.status || "Nowe",
+      status: istniejące?.status || "Nowe",
       data: new Date().toISOString(),
     };
 
     setZlecenia((p) => {
-
       if (edycjaId) {
         return p.map((o) =>
           o.id === edycjaId ? nowe : o
         );
       }
-
       return [nowe, ...p];
-
     });
 
-    setFormularz(pustyFormularz);
-
+    setFormularz(pustyForm);
     setKm("");
     setEta("");
-
     setEdycjaId(null);
-
     setZakladka("zlecenia");
   };
 
+  // ================= STATUS =================
   const zmienStatus = (id, status) => {
+    setZlecenia((p) => {
+      const znalezione = p.find((o) => o.id === id);
 
-    setZlecenia((p) =>
-      p.map((o) =>
-        o.id === id
-          ? { ...o, status }
-          : o
-      )
-    );
+      if (status === "Zakończone") {
+        setHistoria((h) => [
+          {
+            ...znalezione,
+            dataZakonczenia: new Date().toISOString(),
+          },
+          ...h,
+        ]);
 
+        return p.filter((o) => o.id !== id);
+      }
+
+      return p.map((o) =>
+        o.id === id ? { ...o, status } : o
+      );
+    });
   };
 
   const usun = (id) => {
-
-    if (confirm("Usunąć zlecenie?")) {
-
+    if (confirm("Usunąć?")) {
       setZlecenia((p) =>
         p.filter((o) => o.id !== id)
       );
-
     }
-
   };
 
   const edytuj = (o) => {
-
     setFormularz({
       klient: o.klient,
       adres: o.adres,
@@ -285,381 +254,119 @@ export default function App() {
 
     setKm(o.km);
     setEta(o.eta);
-
     setEdycjaId(o.id);
-
     setZakladka("kalkulator");
   };
 
-  // ================= SORT =================
-
-  const zleceniaPosortowane =
-    [...zlecenia].sort(
-      (a, b) =>
-        new Date(a.dataWizyty || 0) -
-        new Date(b.dataWizyty || 0)
-    );
-
-  // ================= LOGIN =================
-
+  // ================= UI =================
   if (!user) {
-
     return (
-
       <div className="h-screen flex items-center justify-center">
-
         <div className="border p-6 w-80 space-y-3">
-
           <input
-            className="border p-2 w-full"
             placeholder="Login"
             value={login}
-            onChange={(e) =>
-              setLogin(e.target.value)
-            }
-          />
-
-          <input
+            onChange={(e) => setLogin(e.target.value)}
             className="border p-2 w-full"
+          />
+          <input
             type="password"
             placeholder="Hasło"
             value={haslo}
-            onChange={(e) =>
-              setHaslo(e.target.value)
-            }
+            onChange={(e) => setHaslo(e.target.value)}
+            className="border p-2 w-full"
           />
-
           <button
             onClick={zaloguj}
             className="bg-blue-600 text-white w-full p-2"
           >
             Zaloguj
           </button>
-
         </div>
-
       </div>
-
     );
-
   }
 
-  // ================= UI =================
-
   return (
-
     <div className="p-4 max-w-5xl mx-auto">
-
       <h1 className="text-3xl font-bold">
         Serwis Robotów
       </h1>
 
+      {/* MENU */}
       <div className="flex gap-2 my-4">
-
-        <button
-          onClick={() =>
-            setZakladka("kalkulator")
-          }
-        >
-          Kalkulator
-        </button>
-
-        <button
-          onClick={() =>
-            setZakladka("zlecenia")
-          }
-        >
-          Zlecenia
-        </button>
-
-        {czyAdmin && (
-          <button
-            onClick={() =>
-              setZakladka("admin")
-            }
-          >
-            Admin
-          </button>
-        )}
-
+        <button onClick={() => setZakladka("kalkulator")}>Kalkulator</button>
+        <button onClick={() => setZakladka("zlecenia")}>Zlecenia</button>
+        <button onClick={() => setZakladka("historia")}>Historia</button>
       </div>
 
       {/* KALKULATOR */}
-
       {zakladka === "kalkulator" && (
-
         <div className="border p-4 space-y-2">
+          <input placeholder="Klient" value={formularz.klient}
+            onChange={(e) => setFormularz({ ...formularz, klient: e.target.value })} />
 
-          <input
-            placeholder="Klient"
-            value={formularz.klient}
-            onChange={(e) =>
-              setFormularz({
-                ...formularz,
-                klient:
-                  e.target.value,
-              })
-            }
-          />
+          <input placeholder="Adres" value={formularz.adres}
+            onChange={(e) => setFormularz({ ...formularz, adres: e.target.value })} />
 
-          <input
-            placeholder="Adres"
-            value={formularz.adres}
-            onChange={(e) =>
-              setFormularz({
-                ...formularz,
-                adres:
-                  e.target.value,
-              })
-            }
-          />
-
-          <input
-            placeholder="Telefon"
-            value={formularz.telefon}
-            onChange={(e) =>
-              setFormularz({
-                ...formularz,
-                telefon:
-                  e.target.value,
-              })
-            }
-          />
-
-          <input
-            type="datetime-local"
-            value={formularz.dataWizyty}
-            onChange={(e) =>
-              setFormularz({
-                ...formularz,
-                dataWizyty:
-                  e.target.value,
-              })
-            }
-          />
+          <input type="datetime-local" value={formularz.dataWizyty}
+            onChange={(e) => setFormularz({ ...formularz, dataWizyty: e.target.value })} />
 
           <div className="grid grid-cols-2 gap-2">
+            <input placeholder="Maszynowa" value={formularz.maszynowa}
+              onChange={(e) => setFormularz({ ...formularz, maszynowa: e.target.value })} />
 
-            <input
-              placeholder="Maszynowa"
-              value={
-                formularz.maszynowa
-              }
-              onChange={(e) =>
-                setFormularz({
-                  ...formularz,
-                  maszynowa:
-                    e.target.value,
-                })
-              }
-            />
+            <input placeholder="Ręczna" value={formularz.reczna}
+              onChange={(e) => setFormularz({ ...formularz, reczna: e.target.value })} />
 
-            <input
-              placeholder="Ręczna"
-              value={
-                formularz.reczna
-              }
-              onChange={(e) =>
-                setFormularz({
-                  ...formularz,
-                  reczna:
-                    e.target.value,
-                })
-              }
-            />
+            <input placeholder="Punkty" value={formularz.punkty}
+              onChange={(e) => setFormularz({ ...formularz, punkty: e.target.value })} />
 
-            <input
-              placeholder="Punkty"
-              value={
-                formularz.punkty
-              }
-              onChange={(e) =>
-                setFormularz({
-                  ...formularz,
-                  punkty:
-                    e.target.value,
-                })
-              }
-            />
-
-            <input
-              value={km}
-              readOnly
-              className="bg-gray-100"
-            />
-
+            <input value={km} readOnly className="bg-gray-100" />
           </div>
 
-          <div>
-            📍 {BASE.name} → klient
-          </div>
+          <div>🚗 {km} km | 🕒 {eta} min</div>
+          <div className="font-bold">{suma.toFixed(2)} zł</div>
 
-          <div>
-            🚗 {km} km | 🕒 {eta} min
-          </div>
-
-          <div className="font-bold">
-            {suma.toFixed(2)} zł
-          </div>
-
-          <button
-            onClick={zapisz}
-            className="bg-green-600 text-white p-2"
-          >
+          <button onClick={zapisz} className="bg-green-600 text-white p-2">
             Zapisz
           </button>
-
         </div>
-
       )}
 
       {/* ZLECENIA */}
-
       {zakladka === "zlecenia" && (
-
         <div className="space-y-3">
+          {zlecenia.map((o) => (
+            <div key={o.id} className="border p-3">
+              <div className="font-bold">{o.klient}</div>
+              <div>{o.status}</div>
+              <div>🚗 {o.km} km | 🕒 {o.eta} min</div>
+              <div>{o.suma} zł</div>
 
-          {zleceniaPosortowane.map(
-            (o) => (
+              <button onClick={() => zmienStatus(o.id, "Zakończone")}>
+                Zakończ
+              </button>
 
-              <div
-                key={o.id}
-                className="border p-3"
-              >
-
-                <div className="font-bold">
-                  {o.klient}
-                </div>
-
-                <span
-                  className={`px-2 py-1 ${STATUS_STYLE[o.status]}`}
-                >
-                  {o.status}
-                </span>
-
-                <div>
-                  📅 {o.dataWizyty}
-                </div>
-
-                <div>
-                  🚗 {o.km} km |
-                  🕒 {o.eta} min
-                </div>
-
-                <div>
-                  {o.suma} zł
-                </div>
-
-                <div className="flex gap-2">
-
-                  <button
-                    onClick={() =>
-                      zmienStatus(
-                        o.id,
-                        "Nowe"
-                      )
-                    }
-                  >
-                    Nowe
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      zmienStatus(
-                        o.id,
-                        "W trakcie"
-                      )
-                    }
-                  >
-                    W trakcie
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      zmienStatus(
-                        o.id,
-                        "Zakończone"
-                      )
-                    }
-                  >
-                    Zakończone
-                  </button>
-
-                </div>
-
-                <div className="flex gap-2">
-
-                  <button
-                    onClick={() =>
-                      edytuj(o)
-                    }
-                  >
-                    Edytuj
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      usun(o.id)
-                    }
-                  >
-                    Usuń
-                  </button>
-
-                </div>
-
-              </div>
-
-            )
-          )}
-
+              <button onClick={() => edytuj(o)}>Edytuj</button>
+              <button onClick={() => usun(o.id)}>Usuń</button>
+            </div>
+          ))}
         </div>
-
       )}
 
-      {/* ADMIN */}
-
-      {zakladka === "admin" &&
-        czyAdmin && (
-
-          <div className="border p-4 space-y-3">
-
-            <h2 className="font-bold text-xl">
-              💰 Panel cen
-            </h2>
-
-            {Object.keys(ceny).map(
-              (k) => (
-
-                <div key={k}>
-
-                  <label>
-                    {k}
-                  </label>
-
-                  <input
-                    className="border p-2 w-full"
-                    value={ceny[k]}
-                    onChange={(e) =>
-                      setCeny({
-                        ...ceny,
-                        [k]: Number(
-                          e.target.value
-                        ),
-                      })
-                    }
-                  />
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        )}
-
+      {/* HISTORIA */}
+      {zakladka === "historia" && (
+        <div className="space-y-3">
+          {historia.map((o) => (
+            <div key={o.id} className="border p-3 bg-gray-50">
+              <div className="font-bold">{o.klient}</div>
+              <div>📅 zakończono: {o.dataZakonczenia}</div>
+              <div>💰 {o.suma} zł</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-
   );
-
 }

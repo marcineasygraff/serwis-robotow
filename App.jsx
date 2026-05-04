@@ -9,7 +9,7 @@ const USERS = [
 const BASE = {
   lat: 49.8547,
   lon: 19.3386,
-  name: "Andrychów, Lenartowicza 64",
+  name: "Andrychów, ul.Lenartowicza 64/5",
 };
 
 // 🎨 STATUSY

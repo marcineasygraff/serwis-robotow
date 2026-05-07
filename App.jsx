@@ -1,27 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// FIX IKON 
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+});
 
 // 🔐 UŻYTKOWNICY
 const USERS = [
   { login: "admin", password: "1234", role: "admin" }
 ];
 
-// 📍 BAZA FIRMY
+// 📍 BAZA
 const BASE = {
   lat: 49.8547,
   lon: 19.3386,
-  name: "Andrychów, ul.Lenartowicza 64/5",
-};
-
-// 🎨 STATUSY
-const STATUS_STYLE = {
-  Nowe: "bg-red-200 text-red-800",
-  "W trakcie": "bg-yellow-200 text-yellow-800",
-  Zakończone: "bg-green-200 text-green-800",
+  name: "Baza",
 };
 
 export default function App() {
 
-  // ================= LOGIN =================
   const [user, setUser] = useState(null);
   const [login, setLogin] = useState("");
   const [haslo, setHaslo] = useState("");
@@ -30,77 +33,30 @@ export default function App() {
     const u = USERS.find(
       (x) => x.login === login && x.password === haslo
     );
-
-    if (!u) return alert("Błędny login lub hasło");
+    if (!u) return alert("Błędny login");
     setUser(u);
   };
 
-  const czyAdmin = user?.role === "admin";
-
-  // ================= PANEL =================
-  const [zakladka, setZakladka] = useState("kalkulator");
-
-  // ================= CENY (ADMIN) =================
-  const [ceny, setCeny] = useState({
-    maszynowa: 7,
-    reczna: 10,
-    punkty: 50,
-    km: 3,
-    wyjazd: 150,
-  });
-
-  useEffect(() => {
-    const z = localStorage.getItem("ceny");
-    if (z) setCeny(JSON.parse(z));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("ceny", JSON.stringify(ceny));
-  }, [ceny]);
-
-  // ================= ZLECENIA + HISTORIA =================
-  const [zlecenia, setZlecenia] = useState([]);
-  const [historia, setHistoria] = useState([]);
-
-  useEffect(() => {
-    const z = localStorage.getItem("zlecenia");
-    const h = localStorage.getItem("historia");
-
-    if (z) setZlecenia(JSON.parse(z));
-    if (h) setHistoria(JSON.parse(h));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("zlecenia", JSON.stringify(zlecenia));
-  }, [zlecenia]);
-
-  useEffect(() => {
-    localStorage.setItem("historia", JSON.stringify(historia));
-  }, [historia]);
-
-  // ================= FORMULARZ =================
-  const pusty = {
+  const [formularz, setFormularz] = useState({
     klient: "",
     adres: "",
-    telefon: "",
-    dataWizyty: "",
-    maszynowa: "",
-    reczna: "",
-    punkty: "",
-  };
+  });
 
-  const [formularz, setFormularz] = useState(pusty);
   const [km, setKm] = useState("");
   const [eta, setEta] = useState("");
-  const [edycjaId, setEdycjaId] = useState(null);
+  const [geoKlient, setGeoKlient] = useState(null);
+  const [loadingGeo, setLoadingGeo] = useState(false);
 
-  const licz = (v) => Number(v) || 0;
-
-  // ================= GEO =================
+  // GEO
   const pobierzGeo = async (adres) => {
     try {
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adres)}`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adres)}`,
+        {
+          headers: {
+            "User-Agent": "app-serwis-robotow"
+          }
+        }
       );
       const d = await r.json();
       if (!d?.length) return null;
@@ -113,7 +69,6 @@ export default function App() {
 
   const policzKm = (a, b) => {
     const R = 6371;
-
     const dLat = ((b.lat - a.lat) * Math.PI) / 180;
     const dLon = ((b.lon - a.lon) * Math.PI) / 180;
 
@@ -144,114 +99,37 @@ export default function App() {
     }
   };
 
-  // ================= AUTO KM =================
+  // AUTO GEO
   useEffect(() => {
     if (!formularz.adres) {
+      setGeoKlient(null);
       setKm("");
       setEta("");
       return;
     }
 
     const t = setTimeout(async () => {
-      const geo = await pobierzGeo(formularz.adres);
-      if (!geo) return;
+      setLoadingGeo(true);
 
+      const geo = await pobierzGeo(formularz.adres);
+      if (!geo) {
+        setLoadingGeo(false);
+        return;
+      }
+
+      setGeoKlient(geo);
       setKm(policzKm(BASE, geo).toFixed(1));
 
       const e = await policzETA(BASE, geo);
       if (e !== null) setEta(e);
+
+      setLoadingGeo(false);
     }, 600);
 
     return () => clearTimeout(t);
   }, [formularz.adres]);
 
-  // ================= SUMA =================
-  const suma = useMemo(() => {
-    const baza =
-      licz(formularz.maszynowa) * ceny.maszynowa +
-      licz(formularz.reczna) * ceny.reczna +
-      licz(formularz.punkty) * ceny.punkty +
-      licz(km) * ceny.km;
-
-    return baza + (baza > 0 ? ceny.wyjazd : 0);
-  }, [formularz, km, ceny]);
-
-  const id = () =>
-    crypto?.randomUUID?.() || String(Date.now());
-
-  // ================= ZAPIS =================
-  const zapisz = () => {
-    if (!formularz.klient) return alert("Podaj klienta");
-
-    const istnieje =
-      zlecenia.find((o) => o.id === edycjaId);
-
-    const nowe = {
-      id: edycjaId || id(),
-      ...formularz,
-      km,
-      eta,
-      suma,
-      status: istnieje?.status || "Nowe",
-      data: new Date().toISOString(),
-    };
-
-    setZlecenia((p) => {
-      if (edycjaId) {
-        return p.map((o) =>
-          o.id === edycjaId ? nowe : o
-        );
-      }
-      return [nowe, ...p];
-    });
-
-    setFormularz(pusty);
-    setKm("");
-    setEta("");
-    setEdycjaId(null);
-    setZakladka("zlecenia");
-  };
-
-  // ================= STATUS =================
-  const zmienStatus = (id, status) => {
-    setZlecenia((p) => {
-      const znalezione = p.find((o) => o.id === id);
-
-      if (status === "Zakończone") {
-        setHistoria((h) => [
-          {
-            ...znalezione,
-            dataZakonczenia: new Date().toISOString(),
-          },
-          ...h,
-        ]);
-
-        return p.filter((o) => o.id !== id);
-      }
-
-      return p.map((o) =>
-        o.id === id ? { ...o, status } : o
-      );
-    });
-  };
-
-  const edytuj = (o) => {
-    setFormularz(o);
-    setKm(o.km);
-    setEta(o.eta);
-    setEdycjaId(o.id);
-    setZakladka("kalkulator");
-  };
-
-  const usun = (id) => {
-    if (confirm("Usunąć zlecenie?")) {
-      setZlecenia((p) =>
-        p.filter((o) => o.id !== id)
-      );
-    }
-  };
-
-  // ================= LOGIN =================
+  // LOGIN
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -280,120 +158,58 @@ export default function App() {
     );
   }
 
-  // ================= UI =================
   return (
-    <div className="p-4 max-w-5xl mx-auto">
+    <div className="p-4 max-w-4xl mx-auto">
 
-      <h1 className="text-3xl font-bold">
-        Serwis Robotów
+      <h1 className="text-2xl font-bold mb-4">
+        Serwis Robotów + mapa
       </h1>
 
-      {/* MENU */}
-      <div className="flex gap-2 my-4">
-        <button onClick={() => setZakladka("kalkulator")}>Kalkulator</button>
-        <button onClick={() => setZakladka("zlecenia")}>Zlecenia</button>
-        <button onClick={() => setZakladka("historia")}>Historia</button>
-        {czyAdmin && (
-          <button onClick={() => setZakladka("admin")}>Admin</button>
-        )}
+      <input
+        className="border p-2 w-full mb-2"
+        placeholder="Klient"
+        value={formularz.klient}
+        onChange={(e) =>
+          setFormularz({ ...formularz, klient: e.target.value })
+        }
+      />
+
+      <input
+        className="border p-2 w-full mb-2"
+        placeholder="Adres"
+        value={formularz.adres}
+        onChange={(e) =>
+          setFormularz({ ...formularz, adres: e.target.value })
+        }
+      />
+
+      {loadingGeo && <div>🔄 Liczę lokalizację...</div>}
+
+      <div className="my-2">
+        🚗 {km} km | 🕒 {eta} min
       </div>
 
-      {/* KALKULATOR */}
-      {zakladka === "kalkulator" && (
-        <div className="border p-4 space-y-2">
+      {/* MAPA */}
+      {geoKlient && (
+        <div className="h-80 mt-4">
+          <MapContainer
+            center={[geoKlient.lat, geoKlient.lon]}
+            zoom={13}
+            className="h-full w-full"
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-          <input placeholder="Klient" value={formularz.klient}
-            onChange={(e) => setFormularz({ ...formularz, klient: e.target.value })} />
+            <Marker position={[BASE.lat, BASE.lon]}>
+              <Popup>🏢 Baza</Popup>
+            </Marker>
 
-          <input placeholder="Adres" value={formularz.adres}
-            onChange={(e) => setFormularz({ ...formularz, adres: e.target.value })} />
+            <Marker position={[geoKlient.lat, geoKlient.lon]}>
+              <Popup>📍 Klient</Popup>
+            </Marker>
 
-          <input placeholder="Telefon" value={formularz.telefon}
-            onChange={(e) => setFormularz({ ...formularz, telefon: e.target.value })} />
-
-          <input type="datetime-local" value={formularz.dataWizyty}
-            onChange={(e) => setFormularz({ ...formularz, dataWizyty: e.target.value })} />
-
-          <div className="grid grid-cols-2 gap-2">
-            <input placeholder="Maszynowa" value={formularz.maszynowa}
-              onChange={(e) => setFormularz({ ...formularz, maszynowa: e.target.value })} />
-
-            <input placeholder="Ręczna" value={formularz.reczna}
-              onChange={(e) => setFormularz({ ...formularz, reczna: e.target.value })} />
-
-            <input placeholder="Punkty" value={formularz.punkty}
-              onChange={(e) => setFormularz({ ...formularz, punkty: e.target.value })} />
-
-            <input value={km} readOnly className="bg-gray-100" />
-          </div>
-
-          <div>🚗 {km} km | 🕒 {eta} min</div>
-          <div className="font-bold">{suma.toFixed(2)} zł</div>
-
-          <button onClick={zapisz} className="bg-green-600 text-white p-2">
-            Zapisz
-          </button>
-        </div>
-      )}
-
-      {/* ZLECENIA */}
-      {zakladka === "zlecenia" && (
-        <div className="space-y-3">
-          {zlecenia.map((o) => (
-            <div key={o.id} className="border p-3">
-              <div className="font-bold">{o.klient}</div>
-              <div>📞 {o.telefon}</div>
-              <div className={`px-2 inline-block ${STATUS_STYLE[o.status]}`}>
-                {o.status}
-              </div>
-
-              <div>🚗 {o.km} km | 🕒 {o.eta} min</div>
-              <div>💰 {o.suma} zł</div>
-
-              <button onClick={() => zmienStatus(o.id, "Zakończone")}>
-                Zakończ
-              </button>
-              <button onClick={() => edytuj(o)}>Edytuj</button>
-              <button onClick={() => usun(o.id)}>Usuń</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* HISTORIA */}
-      {zakladka === "historia" && (
-        <div className="space-y-3">
-          {historia.map((o) => (
-            <div key={o.id} className="border p-3 bg-gray-50">
-              <div className="font-bold">{o.klient}</div>
-              <div>📞 {o.telefon}</div>
-              <div>📅 zakończono: {o.dataZakonczenia}</div>
-              <div>💰 {o.suma} zł</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ADMIN */}
-      {zakladka === "admin" && czyAdmin && (
-        <div className="border p-4 space-y-3">
-          <h2 className="font-bold text-xl">⚙️ Admin</h2>
-
-          {Object.keys(ceny).map((k) => (
-            <div key={k}>
-              <label>{k}</label>
-              <input
-                className="border p-2 w-full"
-                value={ceny[k]}
-                onChange={(e) =>
-                  setCeny({
-                    ...ceny,
-                    [k]: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
-          ))}
+          </MapContainer>
         </div>
       )}
 

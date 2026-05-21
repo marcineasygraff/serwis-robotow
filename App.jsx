@@ -18,10 +18,11 @@ const USERS = [
 
 // 📍 BAZA
 const BASE = {
-  lat: 49.8547,
-  lon: 19.3386,
+  lat: 49.8569,
+  lon: 19.3407,
   name: "Baza",
 };
+
 
 export default function App() {
 

@@ -18,8 +18,8 @@ const USERS = [
 
 // 📍 BAZA
 const BASE = {
-  lat: 49.8569,
-  lon: 19.3407,
+  lat: 49.864685,
+  lon: 19.354651,
   name: "Baza",
 };
 

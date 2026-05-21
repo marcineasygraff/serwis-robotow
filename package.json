@@ -13,9 +13,6 @@
   "devDependencies": {
     "vite": "^5.0.0"
   }
-{
-  "scripts": {
-    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build"
-  }
+
 }
 

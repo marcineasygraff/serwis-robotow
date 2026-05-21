@@ -68,22 +68,20 @@ export default function App() {
     }
   };
 
-  const policzKm = (a, b) => {
-    const R = 6371;
-    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-    const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const policzKm = async (a, b) => {
+  try {
+    const r = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`
+    );
+    const d = await r.json();
 
-    const lat1 = (a.lat * Math.PI) / 180;
-    const lat2 = (b.lat * Math.PI) / 180;
+    if (!d?.routes?.length) return null;
 
-    const x =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1) *
-        Math.cos(lat2) *
-        Math.sin(dLon / 2) ** 2;
-
-    return 2 * R * Math.asin(Math.sqrt(x));
-  };
+    return (d.routes[0].distance / 1000).toFixed(1);
+  } catch {
+    return null;
+  }
+};
 
   const policzETA = async (a, b) => {
     try {
@@ -121,8 +119,8 @@ export default function App() {
       setGeoKlient(geo);
       setKm(policzKm(BASE, geo).toFixed(1));
 
-      const e = await policzETA(BASE, geo);
-      if (e !== null) setEta(e);
+      const kmVal = await policzKm(BASE, geo);
+      if (kmVal !== null) setKm(kmVal);
 
       setLoadingGeo(false);
     }, 600);
